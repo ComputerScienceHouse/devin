@@ -139,6 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
     this._oauth2Helper = OAuth2Helper(client,
         grantType: OAuth2Helper.AUTHORIZATION_CODE,
         clientId: 'devin',
+        // I'm convinced this is safe to have here, but I'm not sure.
         clientSecret: '3seokwNyQFXnZ7awkZ703xFkS3zihlWY',
         scopes: ['openid', 'profile', 'drink_balance']);
     final tokenFuture = this._oauth2Helper.getToken();
