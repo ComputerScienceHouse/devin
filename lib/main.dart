@@ -187,68 +187,66 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildSlot(
       BuildContext context, ThinMachine machine, MachineSlot slot) {
     return Card(
-      child: InkWell(
-        onTap: null,
-        child: ListTile(
-            title: Row(children: [
-              Text(slot.item.name),
-              Expanded(
-                  child: Align(
-                      alignment: Alignment.centerRight,
-                      child: InkWell(
-                          onTap: () {
-                            setState(() {
-                              _usdUnit = !_usdUnit;
-                            });
-                          },
-                          child: Chip(
-                            avatar: const Icon(Icons.attach_money,
-                                semanticLabel: "Price"),
-                            label: Text(_usdUnit
-                                ? ("\$${(slot.item.price / 100).toStringAsFixed(2)}")
-                                : ("${slot.item.price.toString()} Credits")),
-                          ))))
-            ]),
-            subtitle: FutureBuilder<int?>(
-                future: _creditCount,
-                builder: (context, snapshot) {
-                  return Row(children: [
-                    Expanded(
-                        child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                primary: Theme.of(context).colorScheme.primary,
-                                onPrimary:
-                                    Theme.of(context).colorScheme.onPrimary,
-                              ),
-                              onPressed: (snapshot.data == null ||
-                                      snapshot.data! >= slot.item.price)
-                                  ? () {
+      child: ListTile(
+        title: Row(children: [
+          Text(slot.item.name),
+          Expanded(
+              child: Align(
+                  alignment: Alignment.centerRight,
+                  child: InkWell(
+                      customBorder: const StadiumBorder(),
+                      onTap: () {
+                        setState(() {
+                          _usdUnit = !_usdUnit;
+                        });
+                      },
+                      child: Chip(
+                        avatar: const Icon(Icons.attach_money,
+                            semanticLabel: "Price"),
+                        label: Text(_usdUnit
+                            ? ("\$${(slot.item.price / 100).toStringAsFixed(2)}")
+                            : ("${slot.item.price.toString()} Credits")),
+                      ))))
+        ]),
+        subtitle: FutureBuilder<int?>(
+            future: _creditCount,
+            builder: (context, snapshot) {
+              return Row(children: [
+                Expanded(
+                    child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            primary: Theme.of(context).colorScheme.primary,
+                            onPrimary: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                          onPressed: (snapshot.data == null ||
+                                  snapshot.data! >= slot.item.price)
+                              ? () {
+                                  setState(() {
+                                    _dropping =
+                                        _dropDrink(machine.name, slot.number);
+                                    _dropping!.then((_) {
                                       setState(() {
-                                        _dropping = _dropDrink(
-                                            machine.name, slot.number);
-                                        _dropping!.then((_) {
-                                          setState(() {
-                                            _dropping = null;
-                                          });
-                                        });
+                                        _dropping = null;
                                       });
-                                    }
-                                  : null,
-                              child: const Text('Buy Now'),
-                            ))),
-                  ]);
-                }),
-            leading: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Icon(machine.icon, semanticLabel: machine.name))
-              ],
-            )),
+                                    });
+                                  });
+                                }
+                              : null,
+                          child: const Text('Buy Now'),
+                        ))),
+              ]);
+            }),
+        leading: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Icon(machine.icon, semanticLabel: machine.name))
+          ],
+        ),
       ),
     );
   }
