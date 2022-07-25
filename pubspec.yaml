@@ -39,6 +39,15 @@ dependencies:
   dynamic_color: ^1.4.0
   http: ^0.13.4
 
+flutter_icons:
+  image_path: "assets/icon-ios.png"
+  adaptive_icon_foreground: "assets/icon-android.png"
+  android: true
+  ios: true
+  image_path_ios: "assets/icon-ios.png"
+  adaptive_icon_background: "#E11C52"
+
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -49,6 +58,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.9.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
