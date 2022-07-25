@@ -1,4 +1,4 @@
-# Devin
+# Flask
 
 A cute little Flutter app you can use to order items from the Computer Science House vending machines!
 
