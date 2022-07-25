@@ -2,12 +2,16 @@
 
 A cute little Flutter app you can use to order items from the Computer Science House vending machines!
 
-<center>
+<p align="center" width="100%">
   <img src="./assets/icon-ios.png" height="350" width="350" alt="Flask Icon" />
-</center>
+</p>
 
 In code, Flask is called `devin` to avoid confusion with the
 [Flask web framework of the same name](https://flask.palletsprojects.com/en/2.1.x/)
+
+## Screenshots
+
+<img src="./assets/readme-screenshot.png" height="400" alt="Screenshot of Flask showing a list of available items" />
 
 ## Installing Flask
 
