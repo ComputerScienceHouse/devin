@@ -220,13 +220,38 @@ class _MyHomePageState extends State<MyHomePage> {
                             primary: Theme.of(context).colorScheme.primary,
                             onPrimary: Theme.of(context).colorScheme.onPrimary,
                           ),
-                          onPressed: (snapshot.data == null ||
-                                  snapshot.data! >= slot.item.price)
+                          onPressed: ((snapshot.data == null ||
+                                      snapshot.data! >= slot.item.price) &&
+                                  _dropping == null)
                               ? () {
                                   setState(() {
                                     _dropping =
                                         _dropDrink(machine.name, slot.number);
+                                    final bar = ScaffoldMessenger.of(context)
+                                        .showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Dropping drink..."),
+                                        duration: Duration(days: 4242),
+                                      ),
+                                    );
                                     _dropping!.then((_) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content:
+                                              Text("Drink dropped! Enjoy!"),
+                                        ),
+                                      );
+                                    }).catchError((err) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              "Oops! Something went wrong: $err"),
+                                        ),
+                                      );
+                                    }).whenComplete(() {
+                                      bar.close();
                                       setState(() {
                                         _dropping = null;
                                       });
