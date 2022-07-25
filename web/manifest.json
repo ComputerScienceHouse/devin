@@ -1,6 +1,6 @@
 {
-    "name": "devin",
-    "short_name": "devin",
+    "name": "Flask",
+    "short_name": "Flask",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

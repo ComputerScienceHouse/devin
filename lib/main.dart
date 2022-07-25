@@ -130,8 +130,8 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
 
     CSHOAuth2Client client = CSHOAuth2Client(
-      redirectUri: 'edu.rit.csh.flask://oauth2redirect',
-      customUriScheme: 'edu.rit.csh.flask',
+      redirectUri: 'edu.rit.csh.devin://oauth2redirect',
+      customUriScheme: 'edu.rit.csh.devin',
     );
     _oauth2Helper = OAuth2Helper(client,
         grantType: OAuth2Helper.AUTHORIZATION_CODE,
