@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'csh_oauth.dart';
 import 'drink_machine.dart';
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dynamic_color/dynamic_color.dart';
+import 'dart:core';
 
 void main() {
   runApp(const MyApp());
@@ -60,40 +60,36 @@ class MyHomePage extends StatefulWidget {
 }
 
 class ThinMachine {
-  ThinMachine({
+  const ThinMachine({
     required this.name,
-    required this.display_name,
+    required this.displayName,
     required this.icon,
   });
 
   final String name;
-  final String display_name;
+  final String displayName;
   final IconData icon;
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static final transparent =
-      const Color(0xFFFFFF); // fully transparent white (invisible)
-
-  int _counter = 0;
   late Future<List<DrinkMachine>> _drinkList;
 
-  late OAuth2Helper _oauth2Helper;
+  late final OAuth2Helper _oauth2Helper;
 
-  List<ThinMachine> _thinMachines = [
-    ThinMachine(
+  static final _thinMachines = [
+    const ThinMachine(
       name: 'bigdrink',
-      display_name: 'Big Drink',
+      displayName: 'Big Drink',
       icon: Icons.sports_bar,
     ),
-    ThinMachine(
+    const ThinMachine(
       name: 'snack',
-      display_name: 'Snack',
+      displayName: 'Snack',
       icon: Icons.ramen_dining,
     ),
-    ThinMachine(
+    const ThinMachine(
       name: 'littledrink',
-      display_name: 'Little Drink',
+      displayName: 'Little Drink',
       icon: Icons.emoji_food_beverage,
     ),
   ];
@@ -102,7 +98,6 @@ class _MyHomePageState extends State<MyHomePage> {
   late Future<int?> _creditCount;
 
   Future<List<DrinkMachine>> _getDrinkList() async {
-    print("Fetching drink list");
     http.Response resp =
         await _oauth2Helper.get("https://drink.csh.rit.edu/drinks");
     final json = jsonDecode(resp.body);
@@ -111,17 +106,19 @@ class _MyHomePageState extends State<MyHomePage> {
         .toList();
   }
 
-  String? _username;
+  late Future<String> _username;
+
+  Future<String> _getUsername() async {
+    final resp = await _oauth2Helper.get(
+        "https://sso.csh.rit.edu/auth/realms/csh/protocol/openid-connect/userinfo");
+    final json = jsonDecode(resp.body);
+    return json["preferred_username"]!;
+  }
 
   Future<int?> _getCreditCount() async {
-    if (_username == null) {
-      final resp = await _oauth2Helper.get(
-          "https://sso.csh.rit.edu/auth/realms/csh/protocol/openid-connect/userinfo");
-      final json = jsonDecode(resp.body);
-      _username = json["preferred_username"]!;
-    }
-    return _oauth2Helper
-        .get("https://drink.csh.rit.edu/users/credits?uid=" + _username!)
+    return _username
+        .then((username) => _oauth2Helper.get(
+            "https://drink.csh.rit.edu/users/credits?uid=${Uri.encodeQueryComponent(username)}"))
         .then((resp) {
       final json = jsonDecode(resp.body);
       return int.parse(json["user"]!["drinkBalance"]!);
@@ -136,33 +133,34 @@ class _MyHomePageState extends State<MyHomePage> {
       redirectUri: 'edu.rit.csh.flask://oauth2redirect',
       customUriScheme: 'edu.rit.csh.flask',
     );
-    this._oauth2Helper = OAuth2Helper(client,
+    _oauth2Helper = OAuth2Helper(client,
         grantType: OAuth2Helper.AUTHORIZATION_CODE,
         clientId: 'devin',
         // I'm convinced this is safe to have here, but I'm not sure.
         clientSecret: '3seokwNyQFXnZ7awkZ703xFkS3zihlWY',
         scopes: ['openid', 'profile', 'drink_balance']);
-    final tokenFuture = this._oauth2Helper.getToken();
-    this._drinkList = tokenFuture.then((_) => this._getDrinkList());
-    this._creditCount = tokenFuture.then((_) => this._getCreditCount());
+    final tokenFuture = _oauth2Helper.getToken();
+    _username = tokenFuture.then((_) => _getUsername());
+    _drinkList = tokenFuture.then((_) => _getDrinkList());
+    _creditCount = tokenFuture.then((_) => _getCreditCount());
   }
 
   void _onSelectMachine(int index) {
-    this.setState(() {
-      this._selectedMachine = index;
+    setState(() {
+      _selectedMachine = index;
     });
   }
 
   int getMachineIndex() {
-    return this._selectedMachine - 1;
+    return _selectedMachine - 1;
   }
 
-  Future<void>? _dropping = null;
+  Future<void>? _dropping;
   bool _usdUnit = false;
 
   Future<void> _dropDrink(String machineName, int slotNumber) async {
-    if (this._dropping != null) {
-      throw new Exception("Already dropping!");
+    if (_dropping != null) {
+      throw Exception("Already dropping!");
     }
     final resp = await _oauth2Helper.post(
       "https://drink.csh.rit.edu/drinks/drop",
@@ -175,15 +173,15 @@ class _MyHomePageState extends State<MyHomePage> {
       }),
     );
     final json = jsonDecode(resp.body);
-    this.setState(() {
+    setState(() {
       if (json["drinkBalance"] != null) {
-        this._creditCount = Future.value(json["drinkBalance"]);
+        _creditCount = Future.value(json["drinkBalance"]);
       } else {
-        this._creditCount = this._getCreditCount();
+        _creditCount = _getCreditCount();
       }
-      this._drinkList = this._getDrinkList();
+      _drinkList = _getDrinkList();
     });
-    print("Finished with dropping a drink! " + resp.body);
+    print("Finished with dropping a drink! ${resp.body}");
   }
 
   Widget _buildSlot(
@@ -199,17 +197,16 @@ class _MyHomePageState extends State<MyHomePage> {
                       alignment: Alignment.centerRight,
                       child: InkWell(
                           onTap: () {
-                            this.setState(() {
-                              this._usdUnit = !this._usdUnit;
+                            setState(() {
+                              _usdUnit = !_usdUnit;
                             });
                           },
                           child: Chip(
-                            avatar: Icon(Icons.attach_money,
+                            avatar: const Icon(Icons.attach_money,
                                 semanticLabel: "Price"),
-                            label: Text(this._usdUnit
-                                ? ("\$" +
-                                    (slot.item.price / 100).toStringAsFixed(2))
-                                : (slot.item.price.toString() + " Credits")),
+                            label: Text(_usdUnit
+                                ? ("\$${(slot.item.price / 100).toStringAsFixed(2)}")
+                                : ("${slot.item.price.toString()} Credits")),
                           ))))
             ]),
             subtitle: FutureBuilder<int?>(
@@ -228,12 +225,12 @@ class _MyHomePageState extends State<MyHomePage> {
                               onPressed: (snapshot.data == null ||
                                       snapshot.data! >= slot.item.price)
                                   ? () {
-                                      this.setState(() {
-                                        this._dropping = this._dropDrink(
+                                      setState(() {
+                                        _dropping = _dropDrink(
                                             machine.name, slot.number);
-                                        this._dropping!.then((_) {
-                                          this.setState(() {
-                                            this._dropping = null;
+                                        _dropping!.then((_) {
+                                          setState(() {
+                                            _dropping = null;
                                           });
                                         });
                                       });
@@ -248,7 +245,7 @@ class _MyHomePageState extends State<MyHomePage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Padding(
-                    padding: EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.only(top: 12),
                     child: Icon(machine.icon, semanticLabel: machine.name))
               ],
             )),
@@ -266,11 +263,11 @@ class _MyHomePageState extends State<MyHomePage> {
         child: FutureBuilder<List<DrinkMachine>>(
           future: _drinkList,
           builder: (context, snapshot) {
-            print("State of snapshot: " + snapshot.connectionState.toString());
+            print("State of snapshot: ${snapshot.connectionState.toString()}");
             if (snapshot.hasData) {
               List<MachineSlot> slots;
-              if (this.getMachineIndex() >= 0) {
-                final thinMachine = this._thinMachines[this.getMachineIndex()];
+              if (getMachineIndex() >= 0) {
+                final thinMachine = _thinMachines[getMachineIndex()];
                 slots = snapshot.data!
                     .firstWhere((machine) => machine.name == thinMachine.name)
                     .slots;
@@ -287,23 +284,22 @@ class _MyHomePageState extends State<MyHomePage> {
                   : a.machine - b.machine);
               Map<int, ThinMachine> machineMap = {};
               for (int i = 0; i < snapshot.data!.length; ++i) {
-                machineMap[snapshot.data![i].id] = this
-                    ._thinMachines
+                machineMap[snapshot.data![i].id] = _thinMachines
                     .firstWhere((e) => e.name == snapshot.data![i].name);
               }
               return RefreshIndicator(
                 child: ListView.builder(
                   padding: const EdgeInsets.all(8),
                   itemCount: slots.length,
-                  itemBuilder: (context, index) => this._buildSlot(
+                  itemBuilder: (context, index) => _buildSlot(
                       context, machineMap[slots[index].machine]!, slots[index]),
                 ),
                 onRefresh: () async {
-                  final drinkList = this._getDrinkList();
-                  final creditCount = this._getCreditCount();
-                  this.setState(() {
-                    this._drinkList = drinkList;
-                    this._creditCount = creditCount;
+                  final drinkList = _getDrinkList();
+                  final creditCount = _getCreditCount();
+                  setState(() {
+                    _drinkList = drinkList;
+                    _creditCount = creditCount;
                   });
                   return Future.wait([drinkList, creditCount]).then((_) => {});
                 },
@@ -311,20 +307,14 @@ class _MyHomePageState extends State<MyHomePage> {
             } else if (snapshot.hasError) {
               return Text("${snapshot.error}");
             }
-            return CircularProgressIndicator();
+            return const CircularProgressIndicator();
           },
         ),
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _incrementCounter,
-      //   tooltip: 'Increment',
-      //   child: const Icon(Icons.add),
-      // ),
-
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: [
-              BottomNavigationBarItem(
+              const BottomNavigationBarItem(
                 icon: Icon(Icons.star),
                 label: 'All',
               )
@@ -332,7 +322,7 @@ class _MyHomePageState extends State<MyHomePage> {
             _thinMachines
                 .map((e) => BottomNavigationBarItem(
                       icon: Icon(e.icon),
-                      label: e.display_name,
+                      label: e.displayName,
                     ))
                 .toList(),
         currentIndex: _selectedMachine,

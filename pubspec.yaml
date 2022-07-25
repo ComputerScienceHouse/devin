@@ -37,6 +37,7 @@ dependencies:
   adaptive_navigation: ^0.0.7
   oauth2_client: ^2.4.1
   dynamic_color: ^1.4.0
+  http: ^0.13.4
 
 dev_dependencies:
   flutter_test:

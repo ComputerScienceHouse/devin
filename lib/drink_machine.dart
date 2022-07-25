@@ -1,22 +1,22 @@
 class DrinkMachine {
-  DrinkMachine({
+  const DrinkMachine({
     required this.id,
-    required this.display_name,
-    required this.is_online,
+    required this.displayName,
+    required this.isOnline,
     required this.name,
     required this.slots,
   });
 
   final int id;
-  final String display_name;
-  final bool is_online;
+  final String displayName;
+  final bool isOnline;
   final String name;
   final List<MachineSlot> slots;
 
   factory DrinkMachine.fromJson(Map<String, dynamic> json) => DrinkMachine(
         id: json["id"],
-        display_name: json["display_name"],
-        is_online: json["is_online"],
+        displayName: json["display_name"],
+        isOnline: json["is_online"],
         name: json["name"],
         slots: List<MachineSlot>.from(
             json["slots"].map((x) => MachineSlot.fromJson(x))),
@@ -24,7 +24,7 @@ class DrinkMachine {
 }
 
 class MachineSlot {
-  MachineSlot({
+  const MachineSlot({
     required this.active,
     required this.count,
     required this.empty,
@@ -51,7 +51,7 @@ class MachineSlot {
 }
 
 class DrinkItem {
-  DrinkItem({
+  const DrinkItem({
     required this.id,
     required this.name,
     required this.price,
