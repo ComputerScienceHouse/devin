@@ -215,7 +215,9 @@ class _MyHomePageState extends State<MyHomePage> {
               List<MachineSlot> slots;
               if (this.getMachineIndex() >= 0) {
                 final thinMachine = this._thinMachines[this.getMachineIndex()];
-                slots = snapshot.data!.firstWhere((machine) => machine.name == thinMachine.name).slots;
+                slots = snapshot.data!
+                    .firstWhere((machine) => machine.name == thinMachine.name)
+                    .slots;
               } else {
                 slots = [];
                 for (int i = 0; i < snapshot.data!.length; i++) {
@@ -224,73 +226,88 @@ class _MyHomePageState extends State<MyHomePage> {
               }
               slots.retainWhere((e) =>
                   e.active && (e.count == null || e.count! > 0) && !e.empty);
+              slots.sort((a, b) => a.machine == b.machine
+                  ? a.number - b.number
+                  : a.machine - b.machine);
               Map<int, ThinMachine> machineMap = {};
               for (int i = 0; i < snapshot.data!.length; ++i) {
                 machineMap[snapshot.data![i].id] = this
                     ._thinMachines
                     .firstWhere((e) => e.name == snapshot.data![i].name);
               }
-              return ListView.builder(
-                padding: const EdgeInsets.all(8),
-                itemCount: slots.length,
-                itemBuilder: (context, index) {
-                  // print("Item builder?");
-                  // This is slow, but I don't really care
-                  ThinMachine machine = machineMap[slots[index].machine]!;
-                  return Card(
-                    child: InkWell(
-                        onTap: null,
-                        child: ListTile(
-                          title: Row(children: [
-                            Text(slots[index].item.name),
-                            Expanded(
-                                child: Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Chip(
-                                      avatar: Icon(Icons.payments,
-                                          semanticLabel: "Price"),
-                                      label: Text(
-                                          slots[index].item.price.toString()),
-                                    )))
-                          ]),
-                          subtitle: Row(children: [
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: FutureBuilder<int?>(
-                                  future: _creditCount,
-                                  builder: (context, snapshot) {
-                                    return ElevatedButton(
-                                      onPressed: (snapshot.data == null ||
-                                              snapshot.data! >=
-                                                  slots[index].item.price)
-                                          ? () {
-                                              this.setState(() {
-                                                this._dropping = this
-                                                    ._dropDrink(
-                                                        machineMap[slots[index]
-                                                                .machine]!
-                                                            .name,
-                                                        slots[index].number);
-                                                this._dropping!.then((_) {
-                                                  this.setState(() {
-                                                    this._dropping = null;
+              return RefreshIndicator(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: slots.length,
+                  itemBuilder: (context, index) {
+                    // print("Item builder?");
+                    // This is slow, but I don't really care
+                    ThinMachine machine = machineMap[slots[index].machine]!;
+                    return Card(
+                      child: InkWell(
+                          onTap: null,
+                          child: ListTile(
+                            title: Row(children: [
+                              Text(slots[index].item.name),
+                              Expanded(
+                                  child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Chip(
+                                        avatar: Icon(Icons.payments,
+                                            semanticLabel: "Price"),
+                                        label: Text(
+                                            slots[index].item.price.toString()),
+                                      )))
+                            ]),
+                            subtitle: Row(children: [
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: FutureBuilder<int?>(
+                                    future: _creditCount,
+                                    builder: (context, snapshot) {
+                                      return ElevatedButton(
+                                        onPressed: (snapshot.data == null ||
+                                                snapshot.data! >=
+                                                    slots[index].item.price)
+                                            ? () {
+                                                this.setState(() {
+                                                  this._dropping = this
+                                                      ._dropDrink(
+                                                          machineMap[
+                                                                  slots[index]
+                                                                      .machine]!
+                                                              .name,
+                                                          slots[index].number);
+                                                  this._dropping!.then((_) {
+                                                    this.setState(() {
+                                                      this._dropping = null;
+                                                    });
                                                   });
                                                 });
-                                              });
-                                              print(slots[index]
-                                                  .number
-                                                  .toString());
-                                            }
-                                          : null,
-                                      child: const Text('Buy'),
-                                    );
-                                  }),
-                            )
-                          ]),
-                          leading:
-                              Icon(machine.icon, semanticLabel: machine.name),
-                        )),
-                  );
+                                                print(slots[index]
+                                                    .number
+                                                    .toString());
+                                              }
+                                            : null,
+                                        child: const Text('Buy'),
+                                      );
+                                    }),
+                              )
+                            ]),
+                            leading:
+                                Icon(machine.icon, semanticLabel: machine.name),
+                          )),
+                    );
+                  },
+                ),
+                onRefresh: () async {
+                  final drinkList = this._getDrinkList();
+                  final creditCount = this._getCreditCount();
+                  this.setState(() {
+                    this._drinkList = drinkList;
+                    this._creditCount = creditCount;
+                  });
+                  return Future.wait([drinkList, creditCount]).then((_) => {});
                 },
               );
             } else if (snapshot.hasError) {
