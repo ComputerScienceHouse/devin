@@ -36,6 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   adaptive_navigation: ^0.0.7
   oauth2_client: ^2.4.1
+  dynamic_color: ^1.4.0
 
 dev_dependencies:
   flutter_test:

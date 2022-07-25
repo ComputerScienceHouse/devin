@@ -5,6 +5,7 @@ import 'csh_oauth.dart';
 import 'drink_machine.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:dynamic_color/dynamic_color.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,26 +14,30 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
+  static final _defaultLightColorScheme =
+      ColorScheme.fromSwatch(primarySwatch: Colors.pink);
+
+  static final _defaultDarkColorScheme = ColorScheme.fromSwatch(
+      primarySwatch: Colors.pink, brightness: Brightness.dark);
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flask',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.pink,
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flask'),
-    );
+    return DynamicColorBuilder(builder: (lightColorScheme, darkColorScheme) {
+      return MaterialApp(
+        title: 'Flask',
+        theme: ThemeData(
+          colorScheme: lightColorScheme ?? _defaultLightColorScheme,
+          useMaterial3: true,
+        ),
+        darkTheme: ThemeData(
+          colorScheme: darkColorScheme ?? _defaultDarkColorScheme,
+          useMaterial3: true,
+        ),
+        // themeMode: ThemeMode.light,
+        home: const MyHomePage(title: 'Flask'),
+      );
+    });
   }
 }
 
@@ -67,6 +72,9 @@ class ThinMachine {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  static final transparent =
+      const Color(0xFFFFFF); // fully transparent white (invisible)
+
   int _counter = 0;
   late Future<List<DrinkMachine>> _drinkList;
 
@@ -93,18 +101,6 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedMachine = 0;
   late Future<int?> _creditCount;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-      this._drinkList = this._getDrinkList();
-    });
-  }
-
   Future<List<DrinkMachine>> _getDrinkList() async {
     print("Fetching drink list");
     http.Response resp =
@@ -118,7 +114,6 @@ class _MyHomePageState extends State<MyHomePage> {
   String? _username;
 
   Future<int?> _getCreditCount() async {
-    // return Future.value(null);
     if (_username == null) {
       final resp = await _oauth2Helper.get(
           "https://sso.csh.rit.edu/auth/realms/csh/protocol/openid-connect/userinfo");
@@ -162,6 +157,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void>? _dropping = null;
+  bool _usdUnit = false;
 
   Future<void> _dropDrink(String machineName, int slotNumber) async {
     if (this._dropping != null) {
@@ -189,24 +185,83 @@ class _MyHomePageState extends State<MyHomePage> {
     print("Finished with dropping a drink! " + resp.body);
   }
 
+  Widget _buildSlot(
+      BuildContext context, ThinMachine machine, MachineSlot slot) {
+    return Card(
+      child: InkWell(
+        onTap: null,
+        child: ListTile(
+            title: Row(children: [
+              Text(slot.item.name),
+              Expanded(
+                  child: Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                          onTap: () {
+                            this.setState(() {
+                              this._usdUnit = !this._usdUnit;
+                            });
+                          },
+                          child: Chip(
+                            avatar: Icon(Icons.attach_money,
+                                semanticLabel: "Price"),
+                            label: Text(this._usdUnit
+                                ? ("\$" +
+                                    (slot.item.price / 100).toStringAsFixed(2))
+                                : (slot.item.price.toString() + " Credits")),
+                          ))))
+            ]),
+            subtitle: FutureBuilder<int?>(
+                future: _creditCount,
+                builder: (context, snapshot) {
+                  return Row(children: [
+                    Expanded(
+                        child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                primary: Theme.of(context).colorScheme.primary,
+                                onPrimary:
+                                    Theme.of(context).colorScheme.onPrimary,
+                              ),
+                              onPressed: (snapshot.data == null ||
+                                      snapshot.data! >= slot.item.price)
+                                  ? () {
+                                      this.setState(() {
+                                        this._dropping = this._dropDrink(
+                                            machine.name, slot.number);
+                                        this._dropping!.then((_) {
+                                          this.setState(() {
+                                            this._dropping = null;
+                                          });
+                                        });
+                                      });
+                                    }
+                                  : null,
+                              child: const Text('Buy Now'),
+                            ))),
+                  ]);
+                }),
+            leading: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Icon(machine.icon, semanticLabel: machine.name))
+              ],
+            )),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: FutureBuilder<List<DrinkMachine>>(
           future: _drinkList,
           builder: (context, snapshot) {
@@ -239,66 +294,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: ListView.builder(
                   padding: const EdgeInsets.all(8),
                   itemCount: slots.length,
-                  itemBuilder: (context, index) {
-                    // print("Item builder?");
-                    // This is slow, but I don't really care
-                    ThinMachine machine = machineMap[slots[index].machine]!;
-                    return Card(
-                      child: InkWell(
-                          onTap: null,
-                          child: ListTile(
-                            title: Row(children: [
-                              Text(slots[index].item.name),
-                              Expanded(
-                                  child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Chip(
-                                        avatar: Icon(Icons.payments,
-                                            semanticLabel: "Price"),
-                                        label: Text(
-                                            slots[index].item.price.toString()),
-                                      )))
-                            ]),
-                            subtitle: Row(children: [
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: FutureBuilder<int?>(
-                                    future: _creditCount,
-                                    builder: (context, snapshot) {
-                                      return ElevatedButton(
-                                        onPressed: (snapshot.data == null ||
-                                                snapshot.data! >=
-                                                    slots[index].item.price)
-                                            ? () {
-                                                this.setState(() {
-                                                  this._dropping = this
-                                                      ._dropDrink(
-                                                          machineMap[
-                                                                  slots[index]
-                                                                      .machine]!
-                                                              .name,
-                                                          slots[index].number);
-                                                  this._dropping!.then((_) {
-                                                    this.setState(() {
-                                                      this._dropping = null;
-                                                    });
-                                                  });
-                                                });
-                                                print(slots[index]
-                                                    .number
-                                                    .toString());
-                                              }
-                                            : null,
-                                        child: const Text('Buy'),
-                                      );
-                                    }),
-                              )
-                            ]),
-                            leading:
-                                Icon(machine.icon, semanticLabel: machine.name),
-                          )),
-                    );
-                  },
+                  itemBuilder: (context, index) => this._buildSlot(
+                      context, machineMap[slots[index].machine]!, slots[index]),
                 ),
                 onRefresh: () async {
                   final drinkList = this._getDrinkList();
@@ -317,11 +314,11 @@ class _MyHomePageState extends State<MyHomePage> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _incrementCounter,
+      //   tooltip: 'Increment',
+      //   child: const Icon(Icons.add),
+      // ),
 
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
