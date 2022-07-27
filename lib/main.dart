@@ -138,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
         clientId: 'devin',
         // I'm convinced this is safe to have here, but I'm not sure.
         clientSecret: '3seokwNyQFXnZ7awkZ703xFkS3zihlWY',
-        scopes: ['openid', 'profile', 'drink_balance']);
+        scopes: ['openid', 'email', 'groups', 'profile', 'drink_balance']);
     final tokenFuture = _oauth2Helper.getToken();
     _username = tokenFuture.then((_) => _getUsername());
     _drinkList = tokenFuture.then((_) => _getDrinkList());
