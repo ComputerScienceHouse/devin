@@ -181,7 +181,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
       _drinkList = _getDrinkList();
     });
-    print("Finished with dropping a drink! ${resp.body}");
+    // print("Finished with dropping a drink! ${resp.body}");
   }
 
   Widget _buildSlot(
@@ -310,7 +310,7 @@ class _MyHomePageState extends State<MyHomePage> {
         child: FutureBuilder<List<DrinkMachine>>(
           future: _drinkList,
           builder: (context, snapshot) {
-            print("State of snapshot: ${snapshot.connectionState.toString()}");
+            // print("State of snapshot: ${snapshot.connectionState.toString()}");
             if (snapshot.hasData) {
               List<MachineSlot> slots;
               if (getMachineIndex() >= 0) {
