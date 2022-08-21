@@ -281,6 +281,30 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
+        actions: [
+          FutureBuilder<int?>(
+            future: _creditCount,
+            builder: (context, snapshot) {
+              if (snapshot.data == null) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                        _usdUnit
+                            ? ("\$${(snapshot.data! / 100).toStringAsFixed(2)}")
+                            : ("${snapshot.data!.toString()} Credits"),
+                        style: Theme.of(context).textTheme.titleMedium),
+                  )
+                ],
+              );
+            },
+          ),
+        ],
       ),
       body: Center(
         child: FutureBuilder<List<DrinkMachine>>(
