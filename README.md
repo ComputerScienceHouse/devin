@@ -19,6 +19,7 @@ You can get prebuilt versions of Flask from these places:
 
 * Android
   * [Google Play Store](https://play.google.com/store/apps/details?id=edu.rit.csh.devin)
+  * [F-Droid](https://f-droid.org/packages/edu.rit.csh.devin/)
 
 ## Building Flask
 
