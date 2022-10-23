@@ -14,7 +14,6 @@ import java.security.interfaces.ECPublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
 import javax.crypto.Cipher
-import org.spongycastle.crypto.ec.ECElGamalEncryptor;
 import java.security.interfaces.RSAPublicKey
 
 
@@ -22,7 +21,7 @@ import java.security.interfaces.RSAPublicKey
 class GatekeeperService: HostApduService() {
     companion object {
         val BASE_AID = byteArrayOf(0xF0.toByte(), 0x63, 0x73, 0x68, 0x72, 0x69, 0x74)
-        val NONCE_SIZE = 8
+        const val NONCE_SIZE = 8
         init {
             Security.insertProviderAt(
                 org.spongycastle.jce.provider.BouncyCastleProvider(),
@@ -51,43 +50,19 @@ class GatekeeperService: HostApduService() {
                 val slotId = aid[aid.size-1]-BASE_AID[aid.size-1]
                 return values().first { it.slot == slotId }
             }
-
-            @Throws(IOException::class)
-            private fun readInputStream(inputStream: InputStream): ByteArray? {
-                // this dynamically extends to take the bytes you read
-                val byteBuffer = ByteArrayOutputStream()
-
-                // this is storage overwritten on each iteration with bytes
-                val bufferSize = 1024
-                val buffer = ByteArray(bufferSize)
-
-                // we need to know how may bytes were read to write them to the byteBuffer
-                var len = 0
-                while (inputStream.read(buffer).also { len = it } != -1) {
-                    byteBuffer.write(buffer, 0, len)
-                }
-
-                // and then we can return your byte array.
-                return byteBuffer.toByteArray()
-            }
         }
         fun getPublicKey(context: Context): ECPublicKey {
             val keyStr = context.resources.openRawResource(publicKey)
-            println("Got key stream!")
             val spki = PemReader(InputStreamReader(keyStr)).readPemObject()
             val key = KeyFactory.getInstance("ECDSA")
-                .generatePublic(X509EncodedKeySpec(spki.getContent()))
-            println("Got key: $key")
+                .generatePublic(X509EncodedKeySpec(spki.content))
             return key as ECPublicKey
         }
         fun getPublicAsymmetricKey(context: Context): RSAPublicKey {
             val keyStr = context.resources.openRawResource(asymmetricPublicKey)
-            println("Got key stream!")
             val spki = PemReader(InputStreamReader(keyStr)).readPemObject()
-            println("Got SPKI!")
             val key = KeyFactory.getInstance("RSA")
-                .generatePublic(X509EncodedKeySpec(spki.getContent()))
-            println("Got key: $key")
+                .generatePublic(X509EncodedKeySpec(spki.content))
             return key as RSAPublicKey
         }
     }
@@ -122,8 +97,6 @@ class GatekeeperService: HostApduService() {
      * response APDU can be sent at this point.
      */
     override fun processCommandApdu(commandApdu: ByteArray?, extras: Bundle?): ByteArray? {
-        System.out.println("AAAAAAAAAAAAAAAAAAAAAAGHHHGHGH HostEmulationManager")
-        // TODO("Not yet implemented")
         if (commandApdu == null) return null
         val apdu = APDU(commandApdu)
         if (apdu.instructionId == 0xA4.toByte()) {
@@ -135,14 +108,13 @@ class GatekeeperService: HostApduService() {
                     println("Wrong select?")
                     return null
                 }
-                println("apdu.data")
-                println(apdu.data.map { value -> value.toString(16).padStart(2, '0') })
+                // println(apdu.data.map { value -> value.toString(16).padStart(2, '0') })
                 if (apdu.data.size != BASE_AID.size) {
                     println("Wrong size?")
                     return null
                 }
                 this.realm = Realm.fromAid(apdu.data) ?: return null
-                this.random.nextBytes(this.ourNonce);
+                this.random.nextBytes(this.ourNonce)
                 this.state = HandshakeState.READER_VERIFICATION
                 println("OK! Sending our nonce back!!!!")
                 val bytes = NFCResponse(this.ourNonce, 0x9000U).toBytes()
@@ -171,9 +143,7 @@ class GatekeeperService: HostApduService() {
                 val encodedValue = this.realm.associationId + theirNonce
 
                 val publicAsymmetricKey = realm.getPublicAsymmetricKey(this.applicationContext)
-                println("Built a key :)")
                 val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
-                println("Got a cipher! $cipher")
                 cipher.init(Cipher.ENCRYPT_MODE, publicAsymmetricKey)
                 val encryptedValue = cipher.doFinal(encodedValue)
                 // Send back encrypted `readerNonce` + association ID
