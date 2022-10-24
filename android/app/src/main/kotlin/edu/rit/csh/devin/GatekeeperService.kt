@@ -17,7 +17,7 @@ import javax.crypto.Cipher
 import java.security.interfaces.RSAPublicKey
 
 
-@RequiresApi(Build.VERSION_CODES.KITKAT)
+@RequiresApi(Build.VERSION_CODES.M)
 class GatekeeperService: HostApduService() {
     companion object {
         val BASE_AID = byteArrayOf(0xF0.toByte(), 0x63, 0x73, 0x68, 0x72, 0x69, 0x74)
@@ -29,6 +29,7 @@ class GatekeeperService: HostApduService() {
             )
         }
     }
+    private var aidApplied = false
     private var state: HandshakeState = HandshakeState.SELECT
 
     enum class HandshakeState {
@@ -37,10 +38,10 @@ class GatekeeperService: HostApduService() {
         SELECT,
     }
 
-    enum class Realm(val slot: Int, private val publicKey: Int, private val asymmetricPublicKey: Int, val associationId: ByteArray) {
-        DOORS(0, R.raw.doors, R.raw.doors_asymmetric, byteArrayOf(0, 1, 2, 3, 4)),
-        DRINK(1, R.raw.drink, R.raw.drink_asymmetric, byteArrayOf(0, 1, 2, 3, 4)),
-        MEMBER_PROJECTS(2, R.raw.member_projects, R.raw.member_projects_asymmetric, byteArrayOf(0, 1, 2, 3, 4));
+    enum class Realm(val id: String, private val slot: Int, private val publicKey: Int, private val asymmetricPublicKey: Int, var associationId: ByteArray) {
+        DOORS("doors", 0, R.raw.doors, R.raw.doors_asymmetric, byteArrayOf(0, 1, 2, 3, 4)),
+        DRINK("drink", 1, R.raw.drink, R.raw.drink_asymmetric, byteArrayOf(0, 1, 2, 3, 4)),
+        MEMBER_PROJECTS("memberProjects", 2, R.raw.member_projects, R.raw.member_projects_asymmetric, byteArrayOf(0, 1, 2, 3, 4));
         companion object {
             fun fromAid(aid: ByteArray): Realm? {
                 if (aid.size != BASE_AID.size) return null
@@ -97,6 +98,10 @@ class GatekeeperService: HostApduService() {
      * response APDU can be sent at this point.
      */
     override fun processCommandApdu(commandApdu: ByteArray?, extras: Bundle?): ByteArray? {
+        if (!aidApplied) {
+            NFCChannel(this).applyAids()
+            aidApplied = true
+        }
         if (commandApdu == null) return null
         val apdu = APDU(commandApdu)
         if (apdu.instructionId == 0xA4.toByte()) {

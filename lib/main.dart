@@ -3,6 +3,7 @@ import 'package:oauth2_client/oauth2_helper.dart';
 import 'package:http/http.dart' as http;
 import 'csh_oauth.dart';
 import 'drink_machine.dart';
+import 'nfc.dart';
 import 'dart:convert';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'dart:core';
@@ -75,6 +76,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late Future<List<DrinkMachine>> _drinkList;
 
   late final OAuth2Helper _oauth2Helper;
+  late final Nfc _nfc;
 
   static final _thinMachines = [
     const ThinMachine(
@@ -143,6 +145,8 @@ class _MyHomePageState extends State<MyHomePage> {
     _username = tokenFuture.then((_) => _getUsername());
     _drinkList = tokenFuture.then((_) => _getDrinkList());
     _creditCount = tokenFuture.then((_) => _getCreditCount());
+    _nfc = Nfc(oauth2Helper: _oauth2Helper);
+    tokenFuture.then((_) => _nfc.syncAid());
   }
 
   void _onSelectMachine(int index) {
