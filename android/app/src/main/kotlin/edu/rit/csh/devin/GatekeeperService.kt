@@ -55,14 +55,14 @@ class GatekeeperService: HostApduService() {
         fun getPublicKey(context: Context): ECPublicKey {
             val keyStr = context.resources.openRawResource(publicKey)
             val spki = PemReader(InputStreamReader(keyStr)).readPemObject()
-            val key = KeyFactory.getInstance("ECDSA")
+            val key = KeyFactory.getInstance("ECDSA", "SC")
                 .generatePublic(X509EncodedKeySpec(spki.content))
             return key as ECPublicKey
         }
         fun getPublicAsymmetricKey(context: Context): RSAPublicKey {
             val keyStr = context.resources.openRawResource(asymmetricPublicKey)
             val spki = PemReader(InputStreamReader(keyStr)).readPemObject()
-            val key = KeyFactory.getInstance("RSA")
+            val key = KeyFactory.getInstance("RSA", "SC")
                 .generatePublic(X509EncodedKeySpec(spki.content))
             return key as RSAPublicKey
         }
@@ -131,7 +131,7 @@ class GatekeeperService: HostApduService() {
 
                 // Validate signature
                 val publicKey = realm.getPublicKey(this.applicationContext)
-                val signer = Signature.getInstance("SHA384withECDSA")
+                val signer = Signature.getInstance("SHA384withECDSA", "SC")
                 signer.initVerify(publicKey)
                 val theirNonce =
                     apdu.data.slice(IntRange(apdu.data.size - NONCE_SIZE, apdu.data.size - 1))
@@ -148,7 +148,7 @@ class GatekeeperService: HostApduService() {
                 val encodedValue = this.realm.associationId + theirNonce
 
                 val publicAsymmetricKey = realm.getPublicAsymmetricKey(this.applicationContext)
-                val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
+                val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", "SC")
                 cipher.init(Cipher.ENCRYPT_MODE, publicAsymmetricKey)
                 val encryptedValue = cipher.doFinal(encodedValue)
                 // Send back encrypted `readerNonce` + association ID
