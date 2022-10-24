@@ -1,7 +1,7 @@
 import 'package:oauth2_client/oauth2_helper.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 class AIDPack {
   const AIDPack({
@@ -29,10 +29,16 @@ class Nfc {
   final OAuth2Helper oauth2Helper;
   static const nfc = MethodChannel("edu.rit.csh.devin/nfc");
 
-  static const gk_base = "https://gatekeeper-v2.csh.rit.edu";
+  static const gkBase = "https://gatekeeper-v2.csh.rit.edu";
 
   Future<void> syncAid() async {
-    final response = await oauth2Helper.get(gk_base + "/mobile/provision");
+    late http.Response response;
+    try {
+      response = await oauth2Helper.get("$gkBase/mobile/provision");
+    } on MissingPluginException catch(_) {
+      print("Warning: NFC plugin not found");
+      return;
+    }
     if (response.statusCode == 200) {
       final json = jsonDecode(response.body);
       final aid = AIDPack(
@@ -42,7 +48,6 @@ class Nfc {
       ).toMap();
       await nfc.invokeMethod("updateAid", aid);
     } else {
-      print(response.body);
       throw Exception("Failed to sync AID");
     }
   }
