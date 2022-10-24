@@ -80,4 +80,7 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.madgag.spongycastle:core:1.58.0.0"
+    implementation "com.madgag.spongycastle:prov:1.58.0.0"
+    implementation 'androidx.security:security-crypto-ktx:1.1.0-alpha03'
 }
