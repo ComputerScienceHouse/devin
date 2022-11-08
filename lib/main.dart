@@ -136,7 +136,7 @@ class _MyHomePageState extends State<MyHomePage> {
       customUriScheme: 'edu.rit.csh.devin',
     );
     _oauth2Helper = OAuth2Helper(client,
-        grantType: OAuth2Helper.AUTHORIZATION_CODE,
+        grantType: OAuth2Helper.authorizationCode,
         clientId: 'devin',
         // I'm convinced this is safe to have here, but I'm not sure.
         clientSecret: '3seokwNyQFXnZ7awkZ703xFkS3zihlWY',
