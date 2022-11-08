@@ -5,9 +5,9 @@ import 'package:http/http.dart' as http;
 
 class AIDPack {
   const AIDPack({
-      required this.doorsId,
-      required this.drinkId,
-      required this.memberProjectsId,
+    required this.doorsId,
+    required this.drinkId,
+    required this.memberProjectsId,
   });
   final String doorsId;
   final String drinkId;
@@ -24,7 +24,7 @@ class AIDPack {
 
 class Nfc {
   const Nfc({
-      required this.oauth2Helper,
+    required this.oauth2Helper,
   });
   final OAuth2Helper oauth2Helper;
   static const nfc = MethodChannel("edu.rit.csh.devin/nfc");
@@ -35,7 +35,7 @@ class Nfc {
     late http.Response response;
     try {
       response = await oauth2Helper.get("$gkBase/mobile/provision");
-    } on MissingPluginException catch(_) {
+    } on MissingPluginException catch (_) {
       print("Warning: NFC plugin not found");
       return;
     }

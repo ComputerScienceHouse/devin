@@ -49,6 +49,7 @@ dependencies:
     git:
       url: https://github.com/Mstrodl/flutter_wear_plugin
       ref: feature/modern-libs
+  wear_bridge: 0.0.1
 
 flutter_icons:
   image_path: "assets/icon-ios.png"
