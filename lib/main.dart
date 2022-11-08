@@ -29,9 +29,8 @@ class MyApp extends StatelessWidget {
 
   static final _isWatch = WearBridge.isWatch();
 
-  static const _flavor = String.fromEnvironment(
-    "edu.rit.csh.devin.flavor", defaultValue: "mobile"
-  );
+  static const _flavor = String.fromEnvironment("edu.rit.csh.devin.flavor",
+      defaultValue: "mobile");
 
   // This widget is the root of your application.
   @override
@@ -98,6 +97,7 @@ class ThinMachine {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Future<List<DrinkMachine>> _drinkList;
+  late Future<dynamic> _tokenFuture;
 
   late final OAuth2Helper _oauth2Helper;
   late final Nfc _nfc;
@@ -165,12 +165,12 @@ class _MyHomePageState extends State<MyHomePage> {
         // I'm convinced this is safe to have here, but I'm not sure.
         clientSecret: '3seokwNyQFXnZ7awkZ703xFkS3zihlWY',
         scopes: ['openid', 'email', 'groups', 'profile', 'drink_balance']);
-    final tokenFuture = _oauth2Helper.getToken();
-    _username = tokenFuture.then((_) => _getUsername());
-    _drinkList = tokenFuture.then((_) => _getDrinkList());
-    _creditCount = tokenFuture.then((_) => _getCreditCount());
+    _tokenFuture = _oauth2Helper.getToken();
+    _username = _tokenFuture.then((_) => _getUsername());
+    _drinkList = _tokenFuture.then((_) => _getDrinkList());
+    _creditCount = _tokenFuture.then((_) => _getCreditCount());
     _nfc = Nfc(oauth2Helper: _oauth2Helper);
-    tokenFuture.then((_) => _nfc.syncAid());
+    _tokenFuture.then((_) => _nfc.syncAid());
   }
 
   void _onSelectMachine(int index) {
@@ -402,7 +402,26 @@ class _MyHomePageState extends State<MyHomePage> {
             } else if (snapshot.hasError) {
               return Text("${snapshot.error}");
             }
-            return const CircularProgressIndicator();
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: FutureBuilder<dynamic>(
+                        future: _tokenFuture,
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return widget.isWatch
+                                ? const Text("Log in on your phone")
+                                : const Text("Log in on your browser");
+                          } else {
+                            return const Text("Loading drinks...");
+                          }
+                        })),
+              ],
+            );
           },
         ),
       ),
