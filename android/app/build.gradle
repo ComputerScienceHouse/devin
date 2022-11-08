@@ -78,7 +78,7 @@ android {
     productFlavors {
         wearos {
             dimension 'wear'
-            applicationIdSuffix 'wear'
+            applicationIdSuffix '.wear'
         }
         mobile {
             dimension 'wear'

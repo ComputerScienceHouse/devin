@@ -29,13 +29,18 @@ class MyApp extends StatelessWidget {
 
   static final _isWatch = WearBridge.isWatch();
 
+  static const _flavor = String.fromEnvironment(
+    "edu.rit.csh.devin.flavor", defaultValue: "mobile"
+  );
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool?>(
         future: _isWatch,
         builder: (context, snapshot) {
-          final isWatch = snapshot.data ?? false;
+          // Otherwise the user gets flashbanged
+          final isWatch = snapshot.data ?? _flavor == "wearos";
           return DynamicColorBuilder(
               builder: (lightColorScheme, darkColorScheme) {
             final darkTheme = ThemeData.from(
