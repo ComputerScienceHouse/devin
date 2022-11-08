@@ -406,7 +406,7 @@ packages:
     description:
       path: "."
       ref: "feature/modern-libs"
-      resolved-ref: "80d92c7c820681cd5fd07eda5b211ff07d9d6068"
+      resolved-ref: d29f3f74d27239d8da6d4b9e1a56122edb6ee637
       url: "https://github.com/Mstrodl/flutter_wear_plugin"
     source: git
     version: "1.1.0"

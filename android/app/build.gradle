@@ -74,6 +74,16 @@ android {
             signingConfig signingConfigs.release
         }
     }
+    flavorDimensions 'wear'
+    productFlavors {
+        wearos {
+            dimension 'wear'
+            applicationIdSuffix 'wear'
+        }
+        mobile {
+            dimension 'wear'
+        }
+    }
 }
 
 flutter {
