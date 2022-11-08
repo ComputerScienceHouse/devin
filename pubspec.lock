@@ -252,7 +252,7 @@ packages:
     description:
       path: "."
       ref: "feature/wearos_auth"
-      resolved-ref: "8f1b5c0ee156fc0a6ab6d19c3fe3948f49aca4be"
+      resolved-ref: "2a04df31f6b0e78d4822e695adcada2449c0c3b2"
       url: "https://github.com/Mstrodl/oauth2_client"
     source: git
     version: "3.0.0"
