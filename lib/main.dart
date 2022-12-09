@@ -9,6 +9,9 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:wear_bridge/wear_bridge.dart';
 import 'dart:core';
 
+const _flavor = String.fromEnvironment("edu.rit.csh.devin.flavor",
+    defaultValue: "mobile");
+
 void main() {
   runApp(const MyApp());
 }
@@ -28,9 +31,6 @@ class MyApp extends StatelessWidget {
       backgroundColor: Colors.black);
 
   static final _isWatch = WearBridge.isWatch();
-
-  static const _flavor = String.fromEnvironment("edu.rit.csh.devin.flavor",
-      defaultValue: "mobile");
 
   // This widget is the root of your application.
   @override
