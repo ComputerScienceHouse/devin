@@ -6,7 +6,11 @@ import 'drink_machine.dart';
 import 'nfc.dart';
 import 'dart:convert';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:wear_bridge/wear_bridge.dart';
 import 'dart:core';
+
+const _flavor = String.fromEnvironment("edu.rit.csh.devin.flavor",
+    defaultValue: "mobile");
 
 void main() {
   runApp(const MyApp());
@@ -21,29 +25,47 @@ class MyApp extends StatelessWidget {
   static final _defaultDarkColorScheme = ColorScheme.fromSwatch(
       primarySwatch: Colors.pink, brightness: Brightness.dark);
 
+  static final _watchColorScheme = ColorScheme.fromSwatch(
+      primarySwatch: Colors.pink,
+      brightness: Brightness.dark,
+      backgroundColor: Colors.black);
+
+  static final _isWatch = WearBridge.isWatch();
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return DynamicColorBuilder(builder: (lightColorScheme, darkColorScheme) {
-      return MaterialApp(
-        title: 'Flask',
-        theme: ThemeData(
-          colorScheme: lightColorScheme ?? _defaultLightColorScheme,
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          colorScheme: darkColorScheme ?? _defaultDarkColorScheme,
-          useMaterial3: true,
-        ),
-        // themeMode: ThemeMode.light,
-        home: const MyHomePage(title: 'Flask'),
-      );
-    });
+    return FutureBuilder<bool?>(
+        future: _isWatch,
+        builder: (context, snapshot) {
+          // Otherwise the user gets flashbanged
+          final isWatch = snapshot.data ?? _flavor == "wearos";
+          return DynamicColorBuilder(
+              builder: (lightColorScheme, darkColorScheme) {
+            final darkTheme = ThemeData.from(
+              colorScheme: isWatch
+                  ? _watchColorScheme
+                  : (darkColorScheme ?? _defaultDarkColorScheme),
+              useMaterial3: true,
+            );
+            return MaterialApp(
+              title: 'Flask',
+              theme: ThemeData.from(
+                colorScheme: lightColorScheme ?? _defaultLightColorScheme,
+                useMaterial3: true,
+              ),
+              darkTheme: darkTheme,
+              themeMode: isWatch ? ThemeMode.dark : ThemeMode.system,
+              home: MyHomePage(title: 'Flask', isWatch: isWatch),
+            );
+          });
+        });
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({Key? key, required this.title, required this.isWatch})
+      : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -55,6 +77,7 @@ class MyHomePage extends StatefulWidget {
   // always marked "final".
 
   final String title;
+  final bool isWatch;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -74,6 +97,7 @@ class ThinMachine {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Future<List<DrinkMachine>> _drinkList;
+  late Future<dynamic> _tokenFuture;
 
   late final OAuth2Helper _oauth2Helper;
   late final Nfc _nfc;
@@ -136,17 +160,17 @@ class _MyHomePageState extends State<MyHomePage> {
       customUriScheme: 'edu.rit.csh.devin',
     );
     _oauth2Helper = OAuth2Helper(client,
-        grantType: OAuth2Helper.AUTHORIZATION_CODE,
+        grantType: OAuth2Helper.authorizationCode,
         clientId: 'devin',
         // I'm convinced this is safe to have here, but I'm not sure.
         clientSecret: '3seokwNyQFXnZ7awkZ703xFkS3zihlWY',
         scopes: ['openid', 'email', 'groups', 'profile', 'drink_balance']);
-    final tokenFuture = _oauth2Helper.getToken();
-    _username = tokenFuture.then((_) => _getUsername());
-    _drinkList = tokenFuture.then((_) => _getDrinkList());
-    _creditCount = tokenFuture.then((_) => _getCreditCount());
+    _tokenFuture = _oauth2Helper.getToken();
+    _username = _tokenFuture.then((_) => _getUsername());
+    _drinkList = _tokenFuture.then((_) => _getDrinkList());
+    _creditCount = _tokenFuture.then((_) => _getCreditCount());
     _nfc = Nfc(oauth2Helper: _oauth2Helper);
-    tokenFuture.then((_) => _nfc.syncAid());
+    _tokenFuture.then((_) => _nfc.syncAid());
   }
 
   void _onSelectMachine(int index) {
@@ -190,6 +214,56 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _buildSlot(
       BuildContext context, ThinMachine machine, MachineSlot slot) {
+    final icon = Icon(machine.icon, semanticLabel: machine.name);
+
+    void onDrop() {
+      setState(() {
+        _dropping = _dropDrink(machine.name, slot.number);
+        final bar = ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Dropping drink..."),
+            duration: Duration(days: 4242),
+          ),
+        );
+        _dropping!.then((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Drink dropped! Enjoy!"),
+            ),
+          );
+        }).catchError((err) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Oops! Something went wrong: $err"),
+            ),
+          );
+        }).whenComplete(() {
+          bar.close();
+          setState(() {
+            _dropping = null;
+          });
+        });
+      });
+    }
+
+    if (widget.isWatch) {
+      return FutureBuilder<int?>(
+          future: _creditCount,
+          builder: (context, snapshot) {
+            return InkWell(
+                customBorder: const StadiumBorder(),
+                onTap: ((snapshot.data == null ||
+                            snapshot.data! >= slot.item.price) &&
+                        _dropping == null)
+                    ? onDrop
+                    : null,
+                child: Chip(
+                  avatar: icon,
+                  label: Text(slot.item.name),
+                ));
+          });
+    }
+
     return Card(
       child: ListTile(
         title: Row(children: [
@@ -221,47 +295,15 @@ class _MyHomePageState extends State<MyHomePage> {
                         alignment: Alignment.centerLeft,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            primary: Theme.of(context).colorScheme.primary,
-                            onPrimary: Theme.of(context).colorScheme.onPrimary,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            foregroundColor:
+                                Theme.of(context).colorScheme.onPrimary,
                           ),
                           onPressed: ((snapshot.data == null ||
                                       snapshot.data! >= slot.item.price) &&
                                   _dropping == null)
-                              ? () {
-                                  setState(() {
-                                    _dropping =
-                                        _dropDrink(machine.name, slot.number);
-                                    final bar = ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Dropping drink..."),
-                                        duration: Duration(days: 4242),
-                                      ),
-                                    );
-                                    _dropping!.then((_) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content:
-                                              Text("Drink dropped! Enjoy!"),
-                                        ),
-                                      );
-                                    }).catchError((err) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              "Oops! Something went wrong: $err"),
-                                        ),
-                                      );
-                                    }).whenComplete(() {
-                                      bar.close();
-                                      setState(() {
-                                        _dropping = null;
-                                      });
-                                    });
-                                  });
-                                }
+                              ? onDrop
                               : null,
                           child: const Text('Buy Now'),
                         ))),
@@ -271,9 +313,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Icon(machine.icon, semanticLabel: machine.name))
+            Padding(padding: const EdgeInsets.only(top: 12), child: icon)
           ],
         ),
       ),
@@ -283,33 +323,35 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-        actions: [
-          FutureBuilder<int?>(
-            future: _creditCount,
-            builder: (context, snapshot) {
-              if (snapshot.data == null) {
-                return const SizedBox.shrink();
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Text(
-                        _usdUnit
-                            ? ("\$${(snapshot.data! / 100).toStringAsFixed(2)}")
-                            : ("${snapshot.data!.toString()} Credits"),
-                        style: Theme.of(context).textTheme.titleMedium),
-                  )
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: widget.isWatch
+          ? null
+          : AppBar(
+              title: Text(widget.title),
+              actions: [
+                FutureBuilder<int?>(
+                  future: _creditCount,
+                  builder: (context, snapshot) {
+                    if (snapshot.data == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Text(
+                              _usdUnit
+                                  ? ("\$${(snapshot.data! / 100).toStringAsFixed(2)}")
+                                  : ("${snapshot.data!.toString()} Credits"),
+                              style: Theme.of(context).textTheme.titleMedium),
+                        )
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
       body: Center(
         child: FutureBuilder<List<DrinkMachine>>(
           future: _drinkList,
@@ -340,7 +382,9 @@ class _MyHomePageState extends State<MyHomePage> {
               }
               return RefreshIndicator(
                 child: ListView.builder(
-                  padding: const EdgeInsets.all(8),
+                  padding: widget.isWatch
+                      ? const EdgeInsets.symmetric(horizontal: 8, vertical: 64)
+                      : const EdgeInsets.all(8),
                   itemCount: slots.length,
                   itemBuilder: (context, index) => _buildSlot(
                       context, machineMap[slots[index].machine]!, slots[index]),
@@ -358,28 +402,49 @@ class _MyHomePageState extends State<MyHomePage> {
             } else if (snapshot.hasError) {
               return Text("${snapshot.error}");
             }
-            return const CircularProgressIndicator();
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(),
+                Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: FutureBuilder<dynamic>(
+                        future: _tokenFuture,
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return widget.isWatch
+                                ? const Text("Log in on your phone")
+                                : const Text("Log in on your browser");
+                          } else {
+                            return const Text("Loading drinks...");
+                          }
+                        })),
+              ],
+            );
           },
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: [
-              const BottomNavigationBarItem(
-                icon: Icon(Icons.star),
-                label: 'All',
-              )
-            ] +
-            _thinMachines
-                .map((e) => BottomNavigationBarItem(
-                      icon: Icon(e.icon),
-                      label: e.displayName,
-                    ))
-                .toList(),
-        currentIndex: _selectedMachine,
-        // selectedItemColor: Colors.amber[800],
-        onTap: _onSelectMachine,
-      ),
+      bottomNavigationBar: widget.isWatch
+          ? null
+          : BottomNavigationBar(
+              type: BottomNavigationBarType.fixed,
+              items: [
+                    const BottomNavigationBarItem(
+                      icon: Icon(Icons.star),
+                      label: 'All',
+                    )
+                  ] +
+                  _thinMachines
+                      .map((e) => BottomNavigationBarItem(
+                            icon: Icon(e.icon),
+                            label: e.displayName,
+                          ))
+                      .toList(),
+              currentIndex: _selectedMachine,
+              // selectedItemColor: Colors.amber[800],
+              onTap: _onSelectMachine,
+            ),
     );
   }
 }
