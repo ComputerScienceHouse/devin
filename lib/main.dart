@@ -215,6 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildSlot(
       BuildContext context, ThinMachine machine, MachineSlot slot) {
     final icon = Icon(machine.icon, semanticLabel: machine.name);
+    final name = slot.item.name;
 
     void onDrop() {
       setState(() {
@@ -259,18 +260,22 @@ class _MyHomePageState extends State<MyHomePage> {
                     : null,
                 child: Chip(
                   avatar: icon,
-                  label: Text(slot.item.name),
+                  label: Text(name),
                 ));
           });
     }
 
+    final indexOfSpace = name.indexOf(" ");
+
     return Card(
       child: ListTile(
         title: Row(children: [
-          Text(slot.item.name),
+          Text((name.length <= 15 || indexOfSpace == -1)
+              ? name
+              : "${name.substring(0, indexOfSpace)}\n${name.substring(indexOfSpace + 1)}"),
           Expanded(
               child: Align(
-                  alignment: Alignment.centerRight,
+                  alignment: Alignment.bottomRight,
                   child: InkWell(
                       customBorder: const StadiumBorder(),
                       onTap: () {
@@ -298,13 +303,13 @@ class _MyHomePageState extends State<MyHomePage> {
                             backgroundColor:
                                 Theme.of(context).colorScheme.primary,
                             foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary,
+                                Theme.of(context).colorScheme.onPrimary
                           ),
-                          onPressed: ((snapshot.data == null ||
+                          onPressed: !((snapshot.data == null ||
                                       snapshot.data! >= slot.item.price) &&
                                   _dropping == null)
-                              ? onDrop
-                              : null,
+                              ? null
+                              : onDrop,
                           child: const Text('Buy Now'),
                         ))),
               ]);
