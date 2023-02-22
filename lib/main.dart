@@ -275,7 +275,7 @@ class _MyHomePageState extends State<MyHomePage> {
               : "${name.substring(0, indexOfSpace)}\n${name.substring(indexOfSpace + 1)}"),
           Expanded(
               child: Align(
-                  alignment: Alignment.bottomRight,
+                  alignment: Alignment.centerRight,
                   child: InkWell(
                       customBorder: const StadiumBorder(),
                       onTap: () {
@@ -305,11 +305,11 @@ class _MyHomePageState extends State<MyHomePage> {
                             foregroundColor:
                                 Theme.of(context).colorScheme.onPrimary
                           ),
-                          onPressed: !((snapshot.data == null ||
+                          onPressed: ((snapshot.data == null ||
                                       snapshot.data! >= slot.item.price) &&
                                   _dropping == null)
-                              ? null
-                              : onDrop,
+                              ? onDrop
+                              : null,
                           child: const Text('Buy Now'),
                         ))),
               ]);
