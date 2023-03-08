@@ -9,8 +9,8 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:wear_bridge/wear_bridge.dart';
 import 'dart:core';
 
-const _flavor = String.fromEnvironment("edu.rit.csh.devin.flavor",
-    defaultValue: "mobile");
+const _flavor =
+    String.fromEnvironment("edu.rit.csh.devin.flavor", defaultValue: "mobile");
 
 void main() {
   runApp(const MyApp());
@@ -269,27 +269,25 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return Card(
       child: ListTile(
-        title: Row(children: [
-          Text((name.length <= 15 || indexOfSpace == -1)
-              ? name
-              : "${name.substring(0, indexOfSpace)}\n${name.substring(indexOfSpace + 1)}"),
-          Expanded(
-              child: Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
-                      customBorder: const StadiumBorder(),
-                      onTap: () {
-                        setState(() {
-                          _usdUnit = !_usdUnit;
-                        });
-                      },
-                      child: Chip(
-                        avatar: const Icon(Icons.attach_money,
-                            semanticLabel: "Price"),
-                        label: Text(_usdUnit
-                            ? ("\$${(slot.item.price / 100).toStringAsFixed(2)}")
-                            : ("${slot.item.price.toString()} Credits")),
-                      ))))
+        title:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Flexible(child: Text(name)),
+          Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10.0),
+              child: InkWell(
+                  customBorder: const StadiumBorder(),
+                  onTap: () {
+                    setState(() {
+                      _usdUnit = !_usdUnit;
+                    });
+                  },
+                  child: Chip(
+                    avatar:
+                        const Icon(Icons.attach_money, semanticLabel: "Price"),
+                    label: Text(_usdUnit
+                        ? ("\$${(slot.item.price / 100).toStringAsFixed(2)}")
+                        : ("${slot.item.price.toString()} Credits")),
+                  )))
         ]),
         subtitle: FutureBuilder<int?>(
             future: _creditCount,
@@ -300,11 +298,10 @@ class _MyHomePageState extends State<MyHomePage> {
                         alignment: Alignment.centerLeft,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            foregroundColor:
-                                Theme.of(context).colorScheme.onPrimary
-                          ),
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              foregroundColor:
+                                  Theme.of(context).colorScheme.onPrimary),
                           onPressed: ((snapshot.data == null ||
                                       snapshot.data! >= slot.item.price) &&
                                   _dropping == null)
