@@ -265,8 +265,6 @@ class _MyHomePageState extends State<MyHomePage> {
           });
     }
 
-    final indexOfSpace = name.indexOf(" ");
-
     return Card(
       child: ListTile(
         title:
