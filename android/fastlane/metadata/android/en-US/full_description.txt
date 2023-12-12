@@ -1,5 +1,5 @@
 Flask is an app to use to buy items from drink, Computer Science House's internet-connected vending machine project!
 
-Flask should work on most Android phones, WearOS watches, and Android tablets!
-
 This app can only by used by members of Computer Science House with a computer account. Check https://csh.rit.edu/membership/ for more information or to apply!
+
+Wear OS support is also available! Download the app on your watch to drop drinks without your phone!

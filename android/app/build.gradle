@@ -11,7 +11,7 @@ if (flutterRoot == null) {
     throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
 }
 
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode') << 2
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
 }
@@ -78,10 +78,11 @@ android {
     productFlavors {
         wearos {
             dimension 'wear'
-            applicationIdSuffix '.wear'
+            versionCode = android.defaultConfig.versionCode | 0b01
         }
         mobile {
             dimension 'wear'
+            versionCode = android.defaultConfig.versionCode | 0b00
         }
     }
 }

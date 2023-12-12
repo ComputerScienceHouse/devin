@@ -118,6 +118,11 @@ class _MyHomePageState extends State<MyHomePage> {
       displayName: 'Little Drink',
       icon: Icons.emoji_food_beverage,
     ),
+    const ThinMachine(
+      name: 'bepis',
+      displayName: 'Bepis',
+      icon: Icons.coffee,
+    ),
   ];
 
   int _selectedMachine = 0;
