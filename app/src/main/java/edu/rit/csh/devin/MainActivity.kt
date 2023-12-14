@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -14,8 +13,6 @@ import androidx.compose.material.icons.filled.Coffee
 import androidx.compose.material.icons.filled.EmojiFoodBeverage
 import androidx.compose.material.icons.filled.RamenDining
 import androidx.compose.material.icons.filled.SportsBar
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -39,18 +37,26 @@ import com.okta.authfoundation.credential.CredentialDataSource.Companion.createC
 import com.okta.authfoundationbootstrap.CredentialBootstrap
 import com.okta.webauthenticationui.WebAuthenticationClient.Companion.createWebAuthenticationClient
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import edu.rit.csh.devin.ui.theme.FlaskTheme
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.okta.authfoundation.credential.Token
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ActivityContext
+import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.time.delay
+import javax.inject.Singleton
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 enum class ThinDrinkMachine(val displayName: String, val icon: ImageVector) {
   bigdrink("Big Drink", Icons.Filled.SportsBar),
@@ -70,13 +76,16 @@ class MainActivity : ComponentActivity() {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
           Scaffold(bottomBar = {
             DrinkBottomBar()
-          }) { paddingValues ->
-            Column(modifier = Modifier
-              .fillMaxSize()
-              .padding(bottom = paddingValues.calculateBottomPadding())
-              .verticalScroll(rememberScrollState())) {
-              DrinkList()
+          },
+            topBar = {
+              DrinkTopBar()
             }
+            ) { paddingValues ->
+            DrinkList(
+              modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+            )
           }
         }
       }
@@ -84,14 +93,11 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-@HiltViewModel
-class AuthViewModel @Inject constructor(
-  @ApplicationContext private val context: Context
-) : ViewModel() {
-  private val _accessToken = MutableStateFlow(null as String?)
-  val accessToken: StateFlow<String?> = _accessToken.asStateFlow()
+@Module
+@InstallIn(SingletonComponent::class)
+class AuthViewModel @Inject constructor() : ViewModel() {
+  var accessToken: StateFlow<Token?> = _accessToken.asStateFlow()
 
-  private val credentialDataSource: CredentialDataSource
   private val client: OidcClient
   init {
     val oidcConfiguration = OidcConfiguration(
@@ -102,24 +108,61 @@ class AuthViewModel @Inject constructor(
       oidcConfiguration,
       "https://sso.csh.rit.edu/auth/realms/csh/.well-known/openid-configuration".toHttpUrl()
     )
-    credentialDataSource = client.createCredentialDataSource(context)
-    CredentialBootstrap.initialize(credentialDataSource)
-    GlobalScope.launch {
-      val credential = CredentialBootstrap.defaultCredential()
-      credential.refreshToken()
-      credential.getAccessTokenIfValid()?.let {
-        _accessToken.value = it
+  }
+
+  companion object {
+    var _credentialDataSource: CredentialDataSource? = null
+    private val _accessToken = MutableStateFlow(null as Token?)
+  }
+
+  fun initToken(@ApplicationContext context: Context) {
+    getCredentialDataSource(context)
+  }
+
+  private fun getCredentialDataSource(context: Context): CredentialDataSource {
+    if (_credentialDataSource == null) {
+      val credentialDataSource = client.createCredentialDataSource(context)
+      _credentialDataSource = credentialDataSource
+      CredentialBootstrap.initialize(credentialDataSource)
+      GlobalScope.launch {
+        val credential = CredentialBootstrap.defaultCredential()
+        //credential.refreshToken()
+        val accessToken = credential.getAccessTokenIfValid()
+        accessToken?.let {
+          _accessToken.value = credential.token
+        }
+        // Reset access token if we're expired:
+        _accessToken.collect {
+          val knownToken = it
+          if (knownToken != null) {
+            launch {
+              delay(knownToken.expiresIn.seconds.toJavaDuration())
+              if (_accessToken.value == knownToken) {
+                _accessToken.value = null
+              }
+            }
+          }
+        }
       }
     }
+    return _credentialDataSource!!
+  }
+
+  @Singleton
+  @Provides
+  fun provideToken(@ApplicationContext context: Context): StateFlow<Token?> {
+    getCredentialDataSource(context)
+    return this.accessToken
   }
 
   fun login(@ActivityContext context: Context) {
     viewModelScope.launch {
+      getCredentialDataSource(context)
       val credential = CredentialBootstrap.defaultCredential()
       credential.refreshToken()
       val token = credential.getAccessTokenIfValid()
       if (token != null) {
-        _accessToken.value = token
+        _accessToken.value = credential.token
       } else {
         when (val result =
           client.createWebAuthenticationClient().login(context, "edu.rit.csh.devin://oauth2redirect")) {
@@ -132,7 +175,7 @@ class AuthViewModel @Inject constructor(
           is OidcClientResult.Success -> {
             println("Got login response! $result ${result.result}")
             credential.storeToken(token = result.result)
-            _accessToken.value = result.result.accessToken
+            _accessToken.value = result.result
             // The credential instance now has a token! You can use the `Credential` to make calls to OAuth endpoints, or to sign requests!
           }
         }
@@ -141,7 +184,6 @@ class AuthViewModel @Inject constructor(
   }
 }
 
-
 @Composable
 fun WithAuth(
   authViewModel: AuthViewModel = hiltViewModel(),
@@ -149,13 +191,19 @@ fun WithAuth(
 ) {
   val context = LocalContext.current
   val accessToken by authViewModel.accessToken.collectAsState()
+  LaunchedEffect("WithAuth -> AuthViewModel::initToken") {
+    authViewModel.initToken(context)
+  }
   accessToken?.let {
-    content(it)
+    content(it.accessToken)
   } ?: run {
     Button(onClick = {
       authViewModel.login(context)
     }) {
       Text("Login")
+    }
+    LaunchedEffect(Unit) {
+      authViewModel.login(context)
     }
   }
 }
