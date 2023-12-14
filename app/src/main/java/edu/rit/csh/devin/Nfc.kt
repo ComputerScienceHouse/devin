@@ -102,10 +102,14 @@ class GatekeeperViewModel @Inject constructor(
     .build()
   val api = retrofit.create(GatekeperApi::class.java)
 
-  suspend fun provision(): AIDPack {
-    val aidPack = api.provision()
+  suspend fun provision() {
+    val aidPack = try {
+      api.provision()
+    } catch(err: Exception) {
+      println("Failed to provision gatekeeper keys: $err")
+      return
+    }
     nfc.updateAid(aidPack)
-    return aidPack
   }
 }
 
