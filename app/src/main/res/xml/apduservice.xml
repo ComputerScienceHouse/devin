@@ -1,0 +1,16 @@
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/apdu_service_description"
+    android:requireDeviceUnlock="false">
+  <aid-group android:description="@string/aid_doors_description"
+      android:category="other" android:requireDeviceScreenOn="false">
+    <aid-filter android:name="F0637368726974" />
+  </aid-group>
+  <aid-group android:description="@string/aid_drink_description"
+      android:category="other" android:requireDeviceScreenOn="true">
+    <aid-filter android:name="F0637368726975" />
+  </aid-group>
+  <aid-group android:description="@string/aid_member_projects_description"
+      android:category="other" android:requireDeviceScreenOn="false">
+    <aid-filter android:name="F0637368726976" />
+  </aid-group>
+</host-apdu-service>

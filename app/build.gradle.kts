@@ -59,7 +59,7 @@ dependencies {
   implementation("androidx.compose.ui:ui")
   implementation("androidx.compose.ui:ui-graphics")
   implementation("androidx.compose.ui:ui-tooling-preview")
-  implementation("androidx.compose.material3:material3")
+  implementation("androidx.compose.material3:material3:1.2.0-alpha12")
   testImplementation("junit:junit:4.13.2")
   androidTestImplementation("androidx.test.ext:junit:1.1.5")
   androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -77,10 +77,18 @@ dependencies {
   implementation("com.okta.kotlin:oauth2")
   implementation("com.okta.kotlin:web-authentication-ui")
 
-  implementation("com.google.dagger:hilt-android:2.44")
+  implementation("com.google.dagger:hilt-android:2.48")
   kapt("com.google.dagger:hilt-android-compiler:2.44")
   implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
   implementation("androidx.compose.material:material-icons-extended")
+  implementation("com.squareup.okhttp3:okhttp:4.11.0")
+  implementation("com.squareup.retrofit2:retrofit:2.9.0")
+  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+  implementation("com.madgag.spongycastle:core:1.58.0.0")
+  implementation("com.madgag.spongycastle:prov:1.58.0.0")
+  implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
 }
 
 kapt {
