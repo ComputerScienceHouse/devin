@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -47,34 +46,50 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import javax.inject.Inject
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.joinAll
 import retrofit2.http.Query
-import java.util.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DrinkList(drinkViewModel: DrinkViewModel = hiltViewModel(), gatekeeperViewModel: GatekeeperViewModel = hiltViewModel(), modifier: Modifier) {
+fun DrinkList(
+  drinkViewModel: DrinkViewModel = hiltViewModel(),
+  gatekeeperViewModel: GatekeeperViewModel = hiltViewModel(),
+  modifier: Modifier
+) {
   val selectedMachine by drinkViewModel.selectedMachine.collectAsState()
   val drinkItems by drinkViewModel.items.collectAsState()
+  var refreshError: Exception? by remember { mutableStateOf(null) }
   WithAuth {
     // Get drinks
     LaunchedEffect("DrinkList -> DrinkViewModel::refresh") {
-      drinkViewModel.refresh()
-      gatekeeperViewModel.provision()
+      listOf(launch {
+        refreshError = null
+        try {
+          drinkViewModel.refresh()
+        } catch (err: Exception) {
+          refreshError = err
+        }
+      }, launch {
+        gatekeeperViewModel.provision()
+      }).joinAll()
     }
     val items = drinkItems?.filter {
       selectedMachine == null || selectedMachine == it.machine
@@ -82,19 +97,44 @@ fun DrinkList(drinkViewModel: DrinkViewModel = hiltViewModel(), gatekeeperViewMo
       it.buyable
     }
     val pullRefreshState = rememberPullToRefreshState()
-    if (items != null) {
-
-      if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(Unit) {
+    if (pullRefreshState.isRefreshing) {
+      LaunchedEffect(Unit) {
+        refreshError = null
+        try {
           drinkViewModel.refresh()
-          pullRefreshState.endRefresh()
+        } catch (err: Exception) {
+          refreshError = err
+        }
+        pullRefreshState.endRefresh()
+      }
+    }
+    if (refreshError != null) {
+      Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+      ) {
+        Text(
+          "Failed to Load",
+          style = MaterialTheme.typography.titleLarge,
+          modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+          refreshError!!.message ?: "Unknown Error",
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Button(onClick = {
+          pullRefreshState.startRefresh()
+        }) {
+          Text("Retry")
         }
       }
+    } else if (items != null) {
       Box(modifier = modifier.nestedScroll(connection = pullRefreshState.nestedScrollConnection)) {
         Spacer(modifier = Modifier.height(8.dp))
         LazyColumn(
-          modifier = Modifier.fillMaxSize(),
-          verticalArrangement = Arrangement.spacedBy(8.dp)
+          modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           item {
             Spacer(modifier = Modifier)
@@ -107,9 +147,12 @@ fun DrinkList(drinkViewModel: DrinkViewModel = hiltViewModel(), gatekeeperViewMo
           }
         }
         PullToRefreshContainer(
-          state = pullRefreshState,
-          modifier = Modifier.align(alignment = Alignment.TopCenter)
+          state = pullRefreshState, modifier = Modifier.align(alignment = Alignment.TopCenter)
         )
+      }
+    } else {
+      Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
       }
     }
   }
@@ -138,30 +181,25 @@ fun DrinkRow(slot: SlotBundle, drinkViewModel: DrinkViewModel = hiltViewModel())
           modifier = Modifier.padding(top = 8.dp)
         )
         val dollarUnit by drinkViewModel.dollarUnit.collectAsState()
-        val creditCount by drinkViewModel.drinkCredits.collectAsState()
-        TextButton(
-          enabled = creditCount?.let { it >= slot.slot.item.price } ?: true,
-          contentPadding = PaddingValues(0.dp),
-          onClick = {
-            drinkViewModel.togglePriceUnit()
-          }
-        ) {
+        TextButton(contentPadding = PaddingValues(0.dp), onClick = {
+          drinkViewModel.togglePriceUnit()
+        }) {
           val price = slot.slot.item.price
           Text(
-            formatPrice(dollarUnit, price),
-            style = MaterialTheme.typography.bodyLarge
+            formatPrice(dollarUnit, price), style = MaterialTheme.typography.bodyLarge
           )
         }
       }
       Spacer(modifier = Modifier.weight(1.0f))
-      Button(
-        onClick = {
-          coroutineScope.launch {
-            drinkViewModel.drop(slot.machine.name, slot.slot.number)
-          }
-        },
-        modifier = Modifier.padding(horizontal = 8.dp)
-      ) {
+      val creditCount by drinkViewModel.drinkCredits.collectAsState()
+      val dropping by drinkViewModel.dropping.collectAsState()
+      Button(onClick = {
+        coroutineScope.launch {
+          drinkViewModel.drop(slot.machine.name, slot.slot.number)
+        }
+      },
+        enabled = !dropping && (creditCount?.let { it >= slot.slot.item.price } ?: true),
+        modifier = Modifier.padding(horizontal = 8.dp)) {
         Text("Drop")
       }
     }
@@ -178,9 +216,7 @@ fun formatPrice(dollarUnit: Boolean, price: Long): String {
 }
 
 data class DrinkItem(
-  val id: Number,
-  val name: String,
-  val price: Long
+  val id: Number, val name: String, val price: Long
 )
 
 class SlotBundle(
@@ -202,63 +238,76 @@ class DrinkSlot(
 
 @HiltViewModel
 class DrinkViewModel @Inject constructor(
-  val token: StateFlow<Token?>
+  val token: StateFlow<Token?>, val snackbarHostState: SnackbarHostStateWrapper
 ) : ViewModel() {
   var selectedMachine = MutableStateFlow(null as ThinDrinkMachine?)
-  var _items = MutableStateFlow(null as List<SlotBundle>?)
+  private var _items = MutableStateFlow(null as List<SlotBundle>?)
   val items = _items.asStateFlow()
 
-  var _drinkCredits = MutableStateFlow(null as Long?)
+  private var _drinkCredits = MutableStateFlow(null as Long?)
   val drinkCredits = _drinkCredits.asStateFlow()
 
-  val client = OkHttpClient.Builder()
-    .addInterceptor { chain ->
-      val tokenValue = token.value
-      if (tokenValue == null) {
-        chain.proceed(chain.request())
-      } else {
-        chain.proceed(
-          chain.request().newBuilder()
-            .header("Authorization", "Bearer ${tokenValue.accessToken}")
-            .build()
-        )
-      }
+  private val client = OkHttpClient.Builder().addInterceptor { chain ->
+    val tokenValue = token.value
+    if (tokenValue == null) {
+      chain.proceed(chain.request())
+    } else {
+      chain.proceed(
+        chain.request().newBuilder().header("Authorization", "Bearer ${tokenValue.accessToken}")
+          .build()
+      )
     }
-    .addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-    .build()
-  val retrofit = Retrofit.Builder()
-    .baseUrl("https://drink.csh.rit.edu/")
-    .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create()))
-    .client(client)
-    .build()
-  val api = retrofit.create(Api::class.java)
+  }.addInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY)).build()
+  private val retrofit = Retrofit.Builder().baseUrl("https://drink.csh.rit.edu/")
+    .addConverterFactory(GsonConverterFactory.create(GsonBuilder().create())).client(client).build()
+  private val api = retrofit.create(Api::class.java)
 
   @OptIn(ExperimentalEncodingApi::class)
   suspend fun refresh() {
     coroutineScope {
-      listOf(
-        launch {
-          val drinks = api.getDrinks()
-          _items.value = drinks.machines.flatMap { machine ->
-            machine.slots.map { slot ->
-              SlotBundle(ThinDrinkMachine.valueOf(machine.name), slot)
-            }
+      listOf(launch {
+        val drinks = api.getDrinks()
+        _items.value = drinks.machines.flatMap { machine ->
+          machine.slots.map { slot ->
+            SlotBundle(ThinDrinkMachine.valueOf(machine.name), slot)
           }
-        },
-        launch {
-          val payloadStr =
-            kotlin.io.encoding.Base64.UrlSafe.decode(token.value!!.accessToken.split(".")[1])
-              .decodeToString()
-          val payload = Gson().fromJson(payloadStr, UserPayload::class.java)
-          val credits = api.getCredits(payload.preferred_username)
-          _drinkCredits.value = credits.user.drinkBalance
-        }).joinAll()
+        }
+      }, launch {
+        val payloadStr =
+          kotlin.io.encoding.Base64.UrlSafe.decode(token.value!!.accessToken.split(".")[1])
+            .decodeToString()
+        val payload = Gson().fromJson(payloadStr, UserPayload::class.java)
+        val credits = api.getCredits(payload.preferred_username)
+        _drinkCredits.value = credits.user.drinkBalance
+      }).joinAll()
     }
   }
 
+  private var _dropping = MutableStateFlow(false)
+  val dropping = _dropping.asStateFlow()
+
   suspend fun drop(machineName: String, slotNumber: Int) {
-    val dropResult = api.drop(DropPayload(machineName, slotNumber))
+    val job = viewModelScope.launch {
+      snackbarHostState.snackbarHostState.showSnackbar(
+        message = "Dropping...", duration = SnackbarDuration.Indefinite
+      )
+    }
+    _dropping.value = true
+    val dropResult = try {
+      api.drop(DropPayload(machineName, slotNumber))
+    } catch (err: Exception) {
+      viewModelScope.launch {
+        snackbarHostState.snackbarHostState.showSnackbar(message = "Drop failed: ${err.message}")
+      }
+      return
+    } finally {
+      _dropping.value = false
+      job.cancel()
+    }
     _drinkCredits.value = dropResult.drinkBalance
+    viewModelScope.launch {
+      snackbarHostState.snackbarHostState.showSnackbar(message = "Drink dropped! Enjoy!")
+    }
   }
 
   var _dollarUnit = MutableStateFlow(false)
@@ -290,8 +339,7 @@ data class DropReturn(
 )
 
 data class DropPayload(
-  val machine: String,
-  val slot: Int
+  val machine: String, val slot: Int
 )
 
 interface Api {
@@ -312,16 +360,15 @@ data class CreditCountReturn(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrinkTopBar(drinkViewModel: DrinkViewModel = hiltViewModel()) {
-  TopAppBar(
-    title = {
-      Text("Flask")
-    },
-    actions = {
-      val drinkCredits by drinkViewModel.drinkCredits.collectAsState()
-      val dollarUnit by drinkViewModel.dollarUnit.collectAsState()
-      Text(drinkCredits?.let { formatPrice(dollarUnit, it) } ?: "Loading Credits")
+  TopAppBar(title = {
+    Text("Flask")
+  }, actions = {
+    val drinkCredits by drinkViewModel.drinkCredits.collectAsState()
+    val dollarUnit by drinkViewModel.dollarUnit.collectAsState()
+    drinkCredits?.let {
+      Text(formatPrice(dollarUnit, it))
     }
-  )
+  })
 }
 
 @Composable
@@ -334,18 +381,13 @@ fun DrinkBottomBar(
     machines.forEach {
       val icon = it?.icon ?: Icons.Filled.Star
       val displayName = it?.displayName ?: "All"
-      NavigationBarItem(
-        selected = selectedMachine == it,
-        onClick = {
-          drinkViewModel.selectedMachine.value = it
-        },
-        label = {
-          Text(displayName)
-        },
-        icon = {
-          Icon(imageVector = icon, contentDescription = displayName)
-        }
-      )
+      NavigationBarItem(selected = selectedMachine == it, onClick = {
+        drinkViewModel.selectedMachine.value = it
+      }, label = {
+        Text(displayName)
+      }, icon = {
+        Icon(imageVector = icon, contentDescription = displayName)
+      })
     }
   })
 }

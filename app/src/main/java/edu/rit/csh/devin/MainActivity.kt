@@ -2,9 +2,14 @@ package edu.rit.csh.devin
 
 import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,19 +19,29 @@ import androidx.compose.material.icons.filled.EmojiFoodBeverage
 import androidx.compose.material.icons.filled.RamenDining
 import androidx.compose.material.icons.filled.SportsBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okta.authfoundation.client.OidcClient
@@ -43,30 +58,51 @@ import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import javax.inject.Inject
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.okta.authfoundation.InternalAuthFoundationApi
 import com.okta.authfoundation.credential.Token
+import com.okta.authfoundation.credential.TokenType
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ActivityContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.time.delay
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 enum class ThinDrinkMachine(val displayName: String, val icon: ImageVector) {
-  bigdrink("Big Drink", Icons.Filled.SportsBar),
-  snack("Snack", Icons.Filled.RamenDining),
-  littledrink("Little Drink", Icons.Filled.EmojiFoodBeverage),
-  bepis("Bepis", Icons.Filled.Coffee),
+  bigdrink("Big Drink", Icons.Filled.SportsBar), snack(
+    "Snack",
+    Icons.Filled.RamenDining
+  ),
+  littledrink("Little Drink", Icons.Filled.EmojiFoodBeverage), bepis("Bepis", Icons.Filled.Coffee),
+}
+
+data class SnackbarHostStateWrapper(
+  val snackbarHostState: SnackbarHostState
+)
+
+@Module
+@InstallIn(SingletonComponent::class)
+class SnackbarHostStateProvider {
+  @Provides
+  @Singleton
+  fun provideSnackbarHostState(): SnackbarHostStateWrapper =
+    SnackbarHostStateWrapper(SnackbarHostState())
 }
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+  @Inject
+  lateinit var snackbarHostState: SnackbarHostStateWrapper
+
   @OptIn(ExperimentalMaterial3Api::class)
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -76,11 +112,11 @@ class MainActivity : ComponentActivity() {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
           Scaffold(bottomBar = {
             DrinkBottomBar()
-          },
-            topBar = {
-              DrinkTopBar()
-            }
-            ) { paddingValues ->
+          }, snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState.snackbarHostState)
+          }, topBar = {
+            DrinkTopBar()
+          }) { paddingValues ->
             DrinkList(
               modifier = Modifier
                 .fillMaxSize()
@@ -93,12 +129,16 @@ class MainActivity : ComponentActivity() {
   }
 }
 
+@Suppress("NAME_SHADOWING")
 @Module
 @InstallIn(SingletonComponent::class)
-class AuthViewModel @Inject constructor() : ViewModel() {
+class AuthViewModel constructor() : ViewModel() {
+  @Inject
+  lateinit var snackbarHostState: SnackbarHostStateWrapper
   var accessToken: StateFlow<Token?> = _accessToken.asStateFlow()
 
   private val client: OidcClient
+
   init {
     val oidcConfiguration = OidcConfiguration(
       clientId = "devin2",
@@ -124,9 +164,9 @@ class AuthViewModel @Inject constructor() : ViewModel() {
       val credentialDataSource = client.createCredentialDataSource(context)
       _credentialDataSource = credentialDataSource
       CredentialBootstrap.initialize(credentialDataSource)
-      GlobalScope.launch {
+      viewModelScope.launch {
         val credential = CredentialBootstrap.defaultCredential()
-        //credential.refreshToken()
+        credential.refreshToken()
         val accessToken = credential.getAccessTokenIfValid()
         accessToken?.let {
           _accessToken.value = credential.token
@@ -135,10 +175,19 @@ class AuthViewModel @Inject constructor() : ViewModel() {
         _accessToken.collect {
           val knownToken = it
           if (knownToken != null) {
+            println("We saw a new token! Let's see where this goes...")
             launch {
+              println("In ${knownToken.expiresIn}s we'll attempt to fix this...")
               delay(knownToken.expiresIn.seconds.toJavaDuration())
-              if (_accessToken.value == knownToken) {
-                _accessToken.value = null
+              println("Attempting a refresh!")
+              if (_accessToken.value === knownToken) {
+                println("Tokens are the same")
+                val credential = CredentialBootstrap.defaultCredential()
+                val refreshResult = credential.refreshToken()
+                println("Refreshed: $refreshResult")
+                _accessToken.value = credential.getAccessTokenIfValid()?.let { credential.token }
+              } else {
+                println("Did something change?")
               }
             }
           }
@@ -155,29 +204,30 @@ class AuthViewModel @Inject constructor() : ViewModel() {
     return this.accessToken
   }
 
-  fun login(@ActivityContext context: Context) {
-    viewModelScope.launch {
-      getCredentialDataSource(context)
-      val credential = CredentialBootstrap.defaultCredential()
-      credential.refreshToken()
-      val token = credential.getAccessTokenIfValid()
-      if (token != null) {
-        _accessToken.value = credential.token
-      } else {
-        when (val result =
-          client.createWebAuthenticationClient().login(context, "edu.rit.csh.devin://oauth2redirect")) {
-          is OidcClientResult.Error -> {
-            println("Login machine broke: ${result.exception}")
-            // Timber.e(result.exception, "Failed to login.")
-            // TODO: Display an error to the user.
-          }
+  @OptIn(InternalAuthFoundationApi::class)
+  suspend fun login(@ActivityContext context: Context) {
+    getCredentialDataSource(context)
+    val credential = CredentialBootstrap.defaultCredential()
+    credential.refreshToken()
+    val token = credential.getAccessTokenIfValid()
+    if (token != null) {
+      _accessToken.value = credential.token
+    } else {
+      when (val result = client.createWebAuthenticationClient()
+        .login(context, "edu.rit.csh.devin://oauth2redirect")) {
+        is OidcClientResult.Error -> {
+          println(result.exception)
+          println("Login machine broke: ${result.exception}")
+          // Timber.e(result.exception, "Failed to login.")
+          // TODO: Display an error to the user.
+          throw result.exception
+        }
 
-          is OidcClientResult.Success -> {
-            println("Got login response! $result ${result.result}")
-            credential.storeToken(token = result.result)
-            _accessToken.value = result.result
-            // The credential instance now has a token! You can use the `Credential` to make calls to OAuth endpoints, or to sign requests!
-          }
+        is OidcClientResult.Success -> {
+          println("Got login response! $result ${result.result}")
+          credential.storeToken(token = result.result)
+          _accessToken.value = result.result
+          // The credential instance now has a token! You can use the `Credential` to make calls to OAuth endpoints, or to sign requests!
         }
       }
     }
@@ -186,8 +236,7 @@ class AuthViewModel @Inject constructor() : ViewModel() {
 
 @Composable
 fun WithAuth(
-  authViewModel: AuthViewModel = hiltViewModel(),
-  content: @Composable (token: String) -> Unit
+  authViewModel: AuthViewModel = hiltViewModel(), content: @Composable (token: String) -> Unit
 ) {
   val context = LocalContext.current
   val accessToken by authViewModel.accessToken.collectAsState()
@@ -197,13 +246,44 @@ fun WithAuth(
   accessToken?.let {
     content(it.accessToken)
   } ?: run {
-    Button(onClick = {
-      authViewModel.login(context)
-    }) {
-      Text("Login")
-    }
-    LaunchedEffect(Unit) {
-      authViewModel.login(context)
+    var exception: Exception? by remember { mutableStateOf(null) }
+    Column(
+      modifier = Modifier.fillMaxSize(),
+      verticalArrangement = Arrangement.Center,
+      horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+      if (exception != null) {
+        Text(
+          "Failed to Login",
+          style = MaterialTheme.typography.titleLarge,
+          modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+          exception!!.message ?: "Unknown Error",
+          textAlign = TextAlign.Center,
+          modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Button(onClick = {
+          exception = null
+        }) {
+          Text("Retry")
+        }
+      } else {
+        val coroutineScope = rememberCoroutineScope()
+        LaunchedEffect(Unit) {
+          coroutineScope.launch {
+            try {
+              authViewModel.login(context)
+            } catch (err: Exception) {
+              exception = err
+            }
+          }
+        }
+        CircularProgressIndicator()
+        Text(
+          "Logging you in...", modifier = Modifier.padding(top = 8.dp), textAlign = TextAlign.Center
+        )
+      }
     }
   }
 }
@@ -211,8 +291,7 @@ fun WithAuth(
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
   Text(
-    text = "Hello $name!",
-    modifier = modifier
+    text = "Hello $name!", modifier = modifier
   )
 }
 
