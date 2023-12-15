@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.konan.properties.Properties
+
 plugins {
   id("com.android.application")
   id("org.jetbrains.kotlin.android")
@@ -13,8 +15,8 @@ android {
     applicationId = "edu.rit.csh.devin"
     minSdk = 24
     targetSdk = 34
-    versionCode = 1
-    versionName = "1.0"
+    versionCode = 136
+    versionName = "2.0.0"
 
     manifestPlaceholders["webAuthenticationRedirectScheme"] = "edu.rit.csh.devin"
 
@@ -24,10 +26,25 @@ android {
     }
   }
 
+  signingConfigs {
+    create("release") {
+      val properties = Properties().apply {
+        load(File("key.properties").reader())
+      }
+      keyAlias = properties.getProperty("keyAlias")
+      keyPassword = properties.getProperty("keyPassword")
+      storeFile = File(properties.getProperty("storeFile"))
+      storePassword = properties.getProperty("storePassword")
+    }
+  }
+
   buildTypes {
     release {
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      isDebuggable = false
+      signingConfig = signingConfigs.getByName("release")
     }
   }
   compileOptions {

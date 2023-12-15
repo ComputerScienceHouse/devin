@@ -142,7 +142,7 @@ class AuthViewModel constructor() : ViewModel() {
   init {
     val oidcConfiguration = OidcConfiguration(
       clientId = "devin2",
-      defaultScope = "openid email groups profile drink_balance",
+      defaultScope = "openid email groups profile drink_balance gatekeeper_provision",
     )
     client = OidcClient.createFromDiscoveryUrl(
       oidcConfiguration,

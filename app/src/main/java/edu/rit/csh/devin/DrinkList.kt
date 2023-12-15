@@ -52,6 +52,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.mutableStateOf
@@ -360,15 +361,25 @@ data class CreditCountReturn(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrinkTopBar(drinkViewModel: DrinkViewModel = hiltViewModel()) {
-  TopAppBar(title = {
-    Text("Flask")
-  }, actions = {
-    val drinkCredits by drinkViewModel.drinkCredits.collectAsState()
-    val dollarUnit by drinkViewModel.dollarUnit.collectAsState()
-    drinkCredits?.let {
-      Text(formatPrice(dollarUnit, it))
-    }
-  })
+  TopAppBar(
+    colors = TopAppBarDefaults.topAppBarColors(
+      containerColor = MaterialTheme.colorScheme.primaryContainer,
+      titleContentColor = MaterialTheme.colorScheme.primary,
+    ),
+    title = {
+      Text("Flask")
+    },
+    actions = {
+      val drinkCredits by drinkViewModel.drinkCredits.collectAsState()
+      val dollarUnit by drinkViewModel.dollarUnit.collectAsState()
+      drinkCredits?.let {
+        Text(
+          formatPrice(dollarUnit, it),
+          color = MaterialTheme.colorScheme.primary,
+          modifier = Modifier.padding(end = 12.dp)
+        )
+      }
+    })
 }
 
 @Composable
