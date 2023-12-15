@@ -78,11 +78,13 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
 
 enum class ThinDrinkMachine(val displayName: String, val icon: ImageVector) {
-  bigdrink("Big Drink", Icons.Filled.SportsBar), snack(
+  bigdrink("Big Drink", Icons.Filled.SportsBar),
+  snack(
     "Snack",
     Icons.Filled.RamenDining
   ),
-  littledrink("Little Drink", Icons.Filled.EmojiFoodBeverage), bepis("Bepis", Icons.Filled.Coffee),
+  littledrink("Little Drink", Icons.Filled.EmojiFoodBeverage),
+  bepis("Bepis", Icons.Filled.Coffee),
 }
 
 data class SnackbarHostStateWrapper(

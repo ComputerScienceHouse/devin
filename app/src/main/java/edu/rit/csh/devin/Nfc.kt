@@ -1,39 +1,40 @@
 package edu.rit.csh.devin
 
+import android.content.Context
 import android.content.SharedPreferences
+import android.nfc.cardemulation.HostApduService
+import android.os.Bundle
 import androidx.lifecycle.ViewModel
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.google.gson.GsonBuilder
 import com.okta.authfoundation.credential.Token
-import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.StateFlow
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import javax.inject.Inject
-import android.content.Context
-import android.nfc.cardemulation.HostApduService
-import android.os.Bundle
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import edu.rit.csh.devin.model.AIDPack
+import edu.rit.csh.devin.model.GatekeperApi
+import kotlinx.coroutines.flow.StateFlow
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import org.spongycastle.util.encoders.Hex
 import org.spongycastle.util.io.pem.PemReader
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.io.*
 import java.security.KeyFactory
 import java.security.Security
 import java.security.Signature
 import java.security.interfaces.ECPublicKey
+import java.security.interfaces.RSAPublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
 import javax.crypto.Cipher
-import java.security.interfaces.RSAPublicKey
+import javax.inject.Inject
 import javax.inject.Singleton
 
 class Nfc(context: Context) {
@@ -106,23 +107,13 @@ class GatekeeperViewModel @Inject constructor(
     val aidPack = try {
       api.provision()
     } catch(err: Exception) {
+      err.printStackTrace()
       println("Failed to provision gatekeeper keys: $err")
       return
     }
     nfc.updateAid(aidPack)
   }
 }
-
-interface GatekeperApi {
-  @GET("mobile/provision")
-  suspend fun provision(): AIDPack
-}
-
-data class AIDPack(
-  val doorsId: String,
-  val drinkId: String,
-  val memberProjectsId: String
-)
 
 @AndroidEntryPoint
 class GatekeeperService: HostApduService() {

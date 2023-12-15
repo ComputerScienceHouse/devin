@@ -13,59 +13,59 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import com.google.gson.GsonBuilder
-import com.okta.authfoundation.credential.Token
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.POST
-import javax.inject.Inject
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.okta.authfoundation.credential.Token
+import dagger.hilt.android.lifecycle.HiltViewModel
+import edu.rit.csh.devin.model.Api
+import edu.rit.csh.devin.model.DrinkSlot
+import edu.rit.csh.devin.model.DropPayload
+import edu.rit.csh.devin.model.UserPayload
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.joinAll
-import retrofit2.http.Query
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Inject
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -216,10 +216,6 @@ fun formatPrice(dollarUnit: Boolean, price: Long): String {
   }
 }
 
-data class DrinkItem(
-  val id: Number, val name: String, val price: Long
-)
-
 class SlotBundle(
   val machine: ThinDrinkMachine,
   val slot: DrinkSlot,
@@ -227,15 +223,6 @@ class SlotBundle(
   val buyable: Boolean
     get() = slot.active && (slot.count == null || slot.count > 0) && !slot.empty
 }
-
-class DrinkSlot(
-  val active: Boolean,
-  val count: Int?,
-  val empty: Boolean,
-  val item: DrinkItem,
-  val machine: Int,
-  val number: Int
-)
 
 @HiltViewModel
 class DrinkViewModel @Inject constructor(
@@ -278,7 +265,8 @@ class DrinkViewModel @Inject constructor(
           kotlin.io.encoding.Base64.UrlSafe.decode(token.value!!.accessToken.split(".")[1])
             .decodeToString()
         val payload = Gson().fromJson(payloadStr, UserPayload::class.java)
-        val credits = api.getCredits(payload.preferred_username)
+        println("CHOM CHOM CHOM ${payload.preferredUsername}")
+        val credits = api.getCredits(payload.preferredUsername)
         _drinkCredits.value = credits.user.drinkBalance
       }).joinAll()
     }
@@ -318,45 +306,6 @@ class DrinkViewModel @Inject constructor(
     _dollarUnit.value = !_dollarUnit.value
   }
 }
-
-data class UserPayload(
-  val preferred_username: String
-)
-
-data class DrinkMachineReturn(
-  val display_name: String,
-  val id: Int,
-  val is_online: Boolean,
-  val name: String,
-  val slots: List<DrinkSlot>
-)
-
-data class DrinkListReturn(
-  val machines: List<DrinkMachineReturn>,
-)
-
-data class DropReturn(
-  val drinkBalance: Long
-)
-
-data class DropPayload(
-  val machine: String, val slot: Int
-)
-
-interface Api {
-  @GET("drinks")
-  suspend fun getDrinks(): DrinkListReturn
-
-  @POST("drinks/drop")
-  suspend fun drop(@Body payload: DropPayload): DropReturn
-
-  @GET("/users/credits")
-  suspend fun getCredits(@Query("uid") uid: String): CreditCountReturn
-}
-
-data class CreditCountReturn(
-  val user: DropReturn
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
