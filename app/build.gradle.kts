@@ -15,7 +15,7 @@ android {
     applicationId = "edu.rit.csh.devin"
     minSdk = 24
     targetSdk = 34
-    versionCode = 137
+    versionCode = 139
     versionName = "2.0.0"
 
     manifestPlaceholders["webAuthenticationRedirectScheme"] = "edu.rit.csh.devin"
@@ -46,12 +46,12 @@ android {
       isDebuggable = false
       signingConfig = signingConfigs.getByName("release")
     }
-    debug {
-      isMinifyEnabled = true
-      isShrinkResources = true
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      isDebuggable = true
-    }
+//    debug {
+//      isMinifyEnabled = true
+//      isShrinkResources = true
+//      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+//      isDebuggable = true
+//    }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
