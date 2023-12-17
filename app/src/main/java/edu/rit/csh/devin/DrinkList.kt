@@ -1,11 +1,17 @@
 package edu.rit.csh.devin
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +48,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,6 +61,7 @@ import com.google.gson.GsonBuilder
 import com.okta.authfoundation.credential.Token
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.rit.csh.devin.model.Api
+import edu.rit.csh.devin.model.DrinkMachineReturn
 import edu.rit.csh.devin.model.DrinkSlot
 import edu.rit.csh.devin.model.DropPayload
 import edu.rit.csh.devin.model.UserPayload
@@ -68,7 +78,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Inject
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DrinkList(
   drinkViewModel: DrinkViewModel = hiltViewModel(),
@@ -93,9 +103,7 @@ fun DrinkList(
       }).joinAll()
     }
     val items = drinkItems?.filter {
-      selectedMachine == null || selectedMachine == it.machine
-    }?.filter {
-      it.buyable
+      selectedMachine == null || selectedMachine!!.name == it.name
     }
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
@@ -140,8 +148,34 @@ fun DrinkList(
           item {
             Spacer(modifier = Modifier)
           }
-          items(items) { slot ->
-            DrinkRow(slot)
+          items.forEach { machine ->
+            val thinMachine = ThinDrinkMachine.valueOf(machine.name)
+            item {
+              Row(
+                modifier = Modifier
+                  .padding(horizontal = 8.dp, vertical = 12.dp)
+                  .height(IntrinsicSize.Max)
+              ) {
+                Icon(
+                  imageVector = thinMachine.icon,
+                  contentDescription = null,
+                  modifier = Modifier
+                    .padding(end = 8.dp)
+                    .fillMaxHeight()
+                    .aspectRatio(1F)
+                )
+                Text(
+                  text = machine.displayName,
+                  style = MaterialTheme.typography.headlineLarge,
+                  // modifier = Modifier.padding(vertical = 6.dp)
+                )
+              }
+            }
+            items(machine.slots.filter {
+              it.buyable
+            }) { slot ->
+              DrinkRow(SlotBundle(thinMachine, slot))
+            }
           }
           item {
             Spacer(modifier = Modifier)
@@ -167,27 +201,37 @@ fun DrinkRow(slot: SlotBundle, drinkViewModel: DrinkViewModel = hiltViewModel())
       .fillMaxWidth()
       .padding(horizontal = 8.dp)
   ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Icon(
-        imageVector = slot.machine.icon,
-        contentDescription = slot.machine.displayName,
-        modifier = Modifier
-          .requiredSize(48.dp)
-          .padding(horizontal = 8.dp),
-      )
-      Column(modifier = Modifier.fillMaxHeight()) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
+//      Icon(
+//        imageVector = slot.machine.icon,
+//        contentDescription = slot.machine.displayName,
+//        modifier = Modifier
+//          .requiredSize(48.dp)
+//          .padding(horizontal = 8.dp),
+//      )
+      Column(modifier = Modifier
+        .fillMaxHeight()
+        .padding(start = 4.dp, top = 8.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+      ) {
         Text(
           slot.slot.item.name,
           style = MaterialTheme.typography.titleMedium,
-          modifier = Modifier.padding(top = 8.dp)
+          modifier = Modifier.padding(top = 4.dp, bottom = 4.dp, start = 8.dp)
         )
+        Spacer(modifier = Modifier.height(2.dp))
         val dollarUnit by drinkViewModel.dollarUnit.collectAsState()
-        TextButton(contentPadding = PaddingValues(0.dp), onClick = {
-          drinkViewModel.togglePriceUnit()
-        }) {
-          val price = slot.slot.item.price
+        val price = slot.slot.item.price
+        Box(modifier = Modifier
+          .clip(ButtonDefaults.textShape)
+          .clickable {
+            drinkViewModel.togglePriceUnit()
+          }) {
           Text(
-            formatPrice(dollarUnit, price), style = MaterialTheme.typography.bodyLarge
+            formatPrice(dollarUnit, price),
+            style = MaterialTheme.typography.bodyMedium.copy(color = ButtonDefaults.textButtonColors().contentColor),
+            textAlign = TextAlign.Start,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
           )
         }
       }
@@ -216,20 +260,17 @@ fun formatPrice(dollarUnit: Boolean, price: Long): String {
   }
 }
 
-class SlotBundle(
+data class SlotBundle(
   val machine: ThinDrinkMachine,
   val slot: DrinkSlot,
-) {
-  val buyable: Boolean
-    get() = slot.active && (slot.count == null || slot.count > 0) && !slot.empty
-}
+)
 
 @HiltViewModel
 class DrinkViewModel @Inject constructor(
   val token: StateFlow<Token?>, val snackbarHostState: SnackbarHostStateWrapper
 ) : ViewModel() {
   var selectedMachine = MutableStateFlow(null as ThinDrinkMachine?)
-  private var _items = MutableStateFlow(null as List<SlotBundle>?)
+  private var _items = MutableStateFlow(null as List<DrinkMachineReturn>?)
   val items = _items.asStateFlow()
 
   private var _drinkCredits = MutableStateFlow(null as Long?)
@@ -255,17 +296,17 @@ class DrinkViewModel @Inject constructor(
     coroutineScope {
       listOf(launch {
         val drinks = api.getDrinks()
-        _items.value = drinks.machines.flatMap { machine ->
-          machine.slots.map { slot ->
-            SlotBundle(ThinDrinkMachine.valueOf(machine.name), slot)
-          }
-        }
+        _items.value = drinks.machines
+//        drinks.machines.flatMap { machine ->
+//          machine.slots.map { slot ->
+//            SlotBundle(ThinDrinkMachine.valueOf(machine.name), slot)
+//          }
+//        }
       }, launch {
         val payloadStr =
           kotlin.io.encoding.Base64.UrlSafe.decode(token.value!!.accessToken.split(".")[1])
             .decodeToString()
         val payload = Gson().fromJson(payloadStr, UserPayload::class.java)
-        println("CHOM CHOM CHOM ${payload.preferredUsername}")
         val credits = api.getCredits(payload.preferredUsername)
         _drinkCredits.value = credits.user.drinkBalance
       }).joinAll()
@@ -346,7 +387,7 @@ fun DrinkBottomBar(
       }, label = {
         Text(displayName)
       }, icon = {
-        Icon(imageVector = icon, contentDescription = displayName)
+        Icon(imageVector = icon, contentDescription = null)
       })
     }
   })

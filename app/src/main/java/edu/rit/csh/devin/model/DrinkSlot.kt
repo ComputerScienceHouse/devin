@@ -14,4 +14,7 @@ data class DrinkSlot(
 ) {
   @Keep
   constructor() : this(false, null, false, DrinkItem(), 0, 0)
+
+  val buyable: Boolean
+    get() = active && (count == null || count > 0) && !empty
 }
