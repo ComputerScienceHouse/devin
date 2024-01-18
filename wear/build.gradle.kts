@@ -13,20 +13,18 @@ android {
 
   defaultConfig {
     applicationId = "edu.rit.csh.devin"
-    minSdk = 24
-    targetSdk = 34
+    minSdk = 26
+    targetSdk = 33
     val properties = Properties().apply {
       load(File("version.properties").reader())
     }
     versionCode = Integer.parseInt(properties.getProperty("versionCode"))
     versionName = properties.getProperty("versionName")
 
-    manifestPlaceholders["webAuthenticationRedirectScheme"] = "edu.rit.csh.devin"
-
-    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables {
       useSupportLibrary = true
     }
+
   }
 
   signingConfigs {
@@ -78,40 +76,39 @@ android {
 
 dependencies {
   implementation(project(":shared"))
-  implementation("androidx.core:core-ktx:1.9.0")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-  implementation("androidx.activity:activity-compose:1.7.0")
-  implementation(platform("androidx.compose:compose-bom:2023.03.00"))
+  implementation("com.google.android.gms:play-services-wearable:18.0.0")
+  implementation(platform("androidx.compose:compose-bom:2023.08.00"))
   implementation("androidx.compose.ui:ui")
-  implementation("androidx.compose.ui:ui-graphics")
   implementation("androidx.compose.ui:ui-tooling-preview")
-  implementation("androidx.compose.material3:material3:1.2.0-alpha12")
-  testImplementation("junit:junit:4.13.2")
-  androidTestImplementation("androidx.test.ext:junit:1.1.5")
-  androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-  androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
+  implementation("androidx.wear.compose:compose-material:1.1.2")
+  implementation("androidx.wear.compose:compose-foundation:1.1.2")
+  implementation("androidx.activity:activity-compose:1.7.2")
+  implementation("androidx.core:core-splashscreen:1.0.1")
+  implementation("androidx.wear:wear-phone-interactions:1.0.1")
+  androidTestImplementation(platform("androidx.compose:compose-bom:2023.08.00"))
   androidTestImplementation("androidx.compose.ui:ui-test-junit4")
   debugImplementation("androidx.compose.ui:ui-tooling")
   debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-  implementation("com.squareup.okhttp3:okhttp:4.11.0")
-  implementation("com.squareup.retrofit2:retrofit:2.9.0")
-  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-
-  // Ensure all dependencies are compatible using the Bill of Materials (BOM).
   implementation(platform("com.okta.kotlin:bom:1.2.0"))
 
-  // Add the dependencies to your project.
   implementation("com.okta.kotlin:auth-foundation")
   implementation("com.okta.kotlin:auth-foundation-bootstrap")
   implementation("com.okta.kotlin:oauth2")
-  implementation("com.okta.kotlin:web-authentication-ui")
 
   implementation("com.google.dagger:hilt-android:2.48")
   kapt("com.google.dagger:hilt-android-compiler:2.44")
   implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
   implementation("androidx.compose.material:material-icons-extended")
+  implementation("com.squareup.okhttp3:okhttp:4.11.0")
+  implementation("com.squareup.retrofit2:retrofit:2.9.0")
+  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+  implementation("com.madgag.spongycastle:core:1.58.0.0")
+  implementation("com.madgag.spongycastle:prov:1.58.0.0")
+  implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
+  implementation("com.google.android.horologist:horologist-compose-layout:0.5.17")
 }
 
 kapt {
