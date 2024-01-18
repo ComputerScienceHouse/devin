@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-  <string name="app_name">Flask</string>
-  <string name="apdu_service_description">Use your phone with gatekeeper NFC readers</string>
-  <string name="aid_doors_description">Open gatekeeper doors</string>
-  <string name="aid_drink_description">Buy drinks with your device</string>
-  <string name="aid_member_projects_description">Operate miscellaneous member projects (like Harold)</string>
-</resources>

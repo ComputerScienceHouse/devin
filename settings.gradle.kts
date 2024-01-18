@@ -15,3 +15,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Flask"
 include(":app")
+include(":wear")
+include(":shared")

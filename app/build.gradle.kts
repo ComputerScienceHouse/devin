@@ -15,8 +15,11 @@ android {
     applicationId = "edu.rit.csh.devin"
     minSdk = 24
     targetSdk = 34
-    versionCode = 139
-    versionName = "2.0.0"
+    val properties = Properties().apply {
+      load(File("version.properties").reader())
+    }
+    versionCode = Integer.parseInt(properties.getProperty("versionCode"))
+    versionName = properties.getProperty("versionName")
 
     manifestPlaceholders["webAuthenticationRedirectScheme"] = "edu.rit.csh.devin"
 
@@ -74,7 +77,7 @@ android {
 }
 
 dependencies {
-
+  implementation(project(":shared"))
   implementation("androidx.core:core-ktx:1.9.0")
   implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
   implementation("androidx.activity:activity-compose:1.7.0")
@@ -91,6 +94,11 @@ dependencies {
   debugImplementation("androidx.compose.ui:ui-tooling")
   debugImplementation("androidx.compose.ui:ui-test-manifest")
 
+  implementation("com.squareup.okhttp3:okhttp:4.11.0")
+  implementation("com.squareup.retrofit2:retrofit:2.9.0")
+  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
   // Ensure all dependencies are compatible using the Bill of Materials (BOM).
   implementation(platform("com.okta.kotlin:bom:1.2.0"))
 
@@ -104,14 +112,6 @@ dependencies {
   kapt("com.google.dagger:hilt-android-compiler:2.44")
   implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
   implementation("androidx.compose.material:material-icons-extended")
-  implementation("com.squareup.okhttp3:okhttp:4.11.0")
-  implementation("com.squareup.retrofit2:retrofit:2.9.0")
-  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-
-  implementation("com.madgag.spongycastle:core:1.58.0.0")
-  implementation("com.madgag.spongycastle:prov:1.58.0.0")
-  implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
 }
 
 kapt {
