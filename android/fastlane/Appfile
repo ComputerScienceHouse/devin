@@ -1,2 +1,0 @@
-json_key_file("/home/mary/Downloads/pc-api-7898246580891430676-391-d0c1e4b0627b.json") # Path to the json secret file - Follow https://docs.fastlane.tools/actions/supply/#setup to get one
-package_name("edu.rit.csh.devin") # e.g. com.krausefx.app
