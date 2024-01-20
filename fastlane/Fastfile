@@ -33,14 +33,14 @@ platform :android do
     )
   end
 
-  desc "Deploy a new version to the Google Play"
+  desc "Deploy a new version to Google Play"
   lane :deploy do
     gradle(task: "clean bundleRelease")
     upload_to_play_store(
-      track: "internal"
+      track: "production"
     )
     upload_to_play_store(
-      track: "wear:internal",
+      track: "wear:production",
       aab: "wear/build/outputs/bundle/release/wear-release.aab"
     )
   end
