@@ -1,0 +1,7 @@
+-keep class org.bouncycastle.jcajce.provider.digest.SHA384 {*;}
+-keep class org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings {*;}
+-keep class org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings {*;}
+-keep class org.bouncycastle.jcajce.provider.asymmetric.rsa.KeyFactorySpi {*;}
+-keep class org.bouncycastle.jcajce.provider.asymmetric.ec.KeyFactorySpi$ECDSA {*;}
+-keep class org.bouncycastle.jcajce.provider.asymmetric.ec.SignatureSpi$ecDSA384 {*;}
+-keep class org.bouncycastle.jcajce.provider.asymmetric.rsa.CipherSpi$PKCS1v1_5Padding {*;}

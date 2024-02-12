@@ -18,7 +18,7 @@ android {
 
   buildTypes {
     release {
-      isMinifyEnabled = false
+      isMinifyEnabled = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
   }
@@ -28,6 +28,12 @@ android {
   }
   kotlinOptions {
     jvmTarget = "17"
+  }
+
+  packaging {
+    resources {
+      excludes += "/org/bouncycastle/**"
+    }
   }
 }
 
@@ -59,8 +65,8 @@ dependencies {
   implementation("com.squareup.retrofit2:converter-gson:2.9.0")
   implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
-  implementation("com.madgag.spongycastle:core:1.58.0.0")
-  implementation("com.madgag.spongycastle:prov:1.58.0.0")
+  implementation("org.bouncycastle:bcpkix-jdk15to18:1.77")
+  implementation("org.bouncycastle:bcprov-jdk15to18:1.77")
   implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
 }
 

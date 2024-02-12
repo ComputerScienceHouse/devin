@@ -21,8 +21,8 @@ import edu.rit.csh.devin.shared.model.GatekeperApi
 import kotlinx.coroutines.flow.StateFlow
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
-import org.spongycastle.util.encoders.Hex
-import org.spongycastle.util.io.pem.PemReader
+import org.bouncycastle.util.encoders.Hex
+import org.bouncycastle.util.io.pem.PemReader
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.*
@@ -115,14 +115,10 @@ class GatekeeperViewModel @Inject constructor(
   }
 }
 
-@AndroidEntryPoint
-class GatekeeperService: HostApduService() {
-  @Inject
-  lateinit var nfc: Nfc
-
+public class NfcConstants {
   companion object {
     val BASE_AID = byteArrayOf(0xF0.toByte(), 0x63, 0x73, 0x68, 0x72, 0x69, 0x74)
-    val SPONGY_CASTLE = org.spongycastle.jce.provider.BouncyCastleProvider()
+    val SPONGY_CASTLE = org.bouncycastle.jce.provider.BouncyCastleProvider()
     const val NONCE_SIZE = 8
     init {
       Security.insertProviderAt(
@@ -130,7 +126,21 @@ class GatekeeperService: HostApduService() {
         1
       )
     }
+    fun validateCrypto() {
+      KeyFactory.getInstance("RSA", SPONGY_CASTLE)
+      KeyFactory.getInstance("ECDSA", SPONGY_CASTLE)
+      Cipher.getInstance("RSA/ECB/PKCS1Padding", SPONGY_CASTLE)
+      Signature.getInstance("SHA384withECDSA", SPONGY_CASTLE)
+      println("Validated all crypto methods we require are available!")
+    }
   }
+}
+
+@AndroidEntryPoint
+class GatekeeperService: HostApduService() {
+  @Inject
+  lateinit var nfc: Nfc
+
   private var aidApplied = false
   private var state: HandshakeState = HandshakeState.SELECT
 
@@ -146,25 +156,25 @@ class GatekeeperService: HostApduService() {
     MEMBER_PROJECTS("memberProjects", 2, R.raw.member_projects, R.raw.member_projects_asymmetric, byteArrayOf(0, 1, 2, 3, 4));
     companion object {
       fun fromAid(aid: ByteArray): Realm? {
-        if (aid.size != BASE_AID.size) return null
+        if (aid.size != NfcConstants.BASE_AID.size) return null
         for (i in 0..(aid.size-2)) {
-          if (aid[i] != BASE_AID[i]) return null
+          if (aid[i] != NfcConstants.BASE_AID[i]) return null
         }
-        val slotId = aid[aid.size-1]- BASE_AID[aid.size-1]
+        val slotId = aid[aid.size-1] - NfcConstants.BASE_AID[aid.size-1]
         return values().first { it.slot == slotId }
       }
     }
     fun getPublicKey(context: Context): ECPublicKey {
       val keyStr = context.resources.openRawResource(publicKey)
       val spki = PemReader(InputStreamReader(keyStr)).readPemObject()
-      val key = KeyFactory.getInstance("ECDSA", SPONGY_CASTLE)
+      val key = KeyFactory.getInstance("ECDSA", NfcConstants.SPONGY_CASTLE)
         .generatePublic(X509EncodedKeySpec(spki.content))
       return key as ECPublicKey
     }
     fun getPublicAsymmetricKey(context: Context): RSAPublicKey {
       val keyStr = context.resources.openRawResource(asymmetricPublicKey)
       val spki = PemReader(InputStreamReader(keyStr)).readPemObject()
-      val key = KeyFactory.getInstance("RSA", SPONGY_CASTLE)
+      val key = KeyFactory.getInstance("RSA", NfcConstants.SPONGY_CASTLE)
         .generatePublic(X509EncodedKeySpec(spki.content))
       return key as RSAPublicKey
     }
@@ -216,7 +226,7 @@ class GatekeeperService: HostApduService() {
           return null
         }
         // println(apdu.data.map { value -> value.toString(16).padStart(2, '0') })
-        if (apdu.data.size != BASE_AID.size) {
+        if (apdu.data.size != NfcConstants.BASE_AID.size) {
           println("Wrong size?")
           return null
         }
@@ -233,12 +243,12 @@ class GatekeeperService: HostApduService() {
 
         // Validate signature
         val publicKey = realm.getPublicKey(this.applicationContext)
-        val signer = Signature.getInstance("SHA384withECDSA", SPONGY_CASTLE)
+        val signer = Signature.getInstance("SHA384withECDSA", NfcConstants.SPONGY_CASTLE)
         signer.initVerify(publicKey)
         val theirNonce =
-          apdu.data.slice(IntRange(apdu.data.size - NONCE_SIZE, apdu.data.size - 1))
+          apdu.data.slice(IntRange(apdu.data.size - NfcConstants.NONCE_SIZE, apdu.data.size - 1))
         signer.update(ourNonce + theirNonce)
-        val isValid = signer.verify(apdu.data, 0, apdu.data.size- NONCE_SIZE)
+        val isValid = signer.verify(apdu.data, 0, apdu.data.size - NfcConstants.NONCE_SIZE)
         println("Okay, are we valid? $isValid")
         if (!isValid) {
           this.state = HandshakeState.SELECT
@@ -246,11 +256,11 @@ class GatekeeperService: HostApduService() {
         }
         println("Looks like it's valid!!")
 
-        assert(theirNonce.size == NONCE_SIZE)
+        assert(theirNonce.size == NfcConstants.NONCE_SIZE)
         val encodedValue = this.realm.associationId + theirNonce
 
         val publicAsymmetricKey = realm.getPublicAsymmetricKey(this.applicationContext)
-        val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", SPONGY_CASTLE)
+        val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", NfcConstants.SPONGY_CASTLE)
         cipher.init(Cipher.ENCRYPT_MODE, publicAsymmetricKey)
         val encryptedValue = cipher.doFinal(encodedValue)
         // Send back encrypted `readerNonce` + association ID

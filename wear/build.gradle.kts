@@ -70,6 +70,7 @@ android {
   packaging {
     resources {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
+      excludes += "/org/bouncycastle/**"
     }
   }
 }
@@ -105,8 +106,6 @@ dependencies {
   implementation("com.squareup.retrofit2:converter-gson:2.9.0")
   implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
-  implementation("com.madgag.spongycastle:core:1.58.0.0")
-  implementation("com.madgag.spongycastle:prov:1.58.0.0")
   implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
   implementation("com.google.android.horologist:horologist-compose-layout:0.5.17")
 }
