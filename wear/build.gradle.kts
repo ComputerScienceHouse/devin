@@ -18,7 +18,7 @@ android {
     val properties = Properties().apply {
       load(File("version.properties").reader())
     }
-    versionCode = Integer.parseInt(properties.getProperty("versionCode"))
+    versionCode = (Integer.parseInt(properties.getProperty("versionCode")) shl 2) or 1
     versionName = properties.getProperty("versionName")
 
     vectorDrawables {

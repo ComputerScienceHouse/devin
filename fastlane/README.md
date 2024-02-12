@@ -37,7 +37,7 @@ Submit a new Beta Build to Google Play
 [bundle exec] fastlane android deploy
 ```
 
-Deploy a new version to the Google Play
+Deploy a new version to Google Play
 
 ----
 
