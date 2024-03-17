@@ -25,7 +25,8 @@ platform :android do
   lane :beta do
     gradle(task: "clean bundleRelease")
     upload_to_play_store(
-      track: "internal"
+      track: "internal",
+      aab: "app/build/outputs/bundle/release/app-release.aab"
     )
     upload_to_play_store(
       track: "wear:internal",
@@ -37,7 +38,8 @@ platform :android do
   lane :deploy do
     gradle(task: "clean bundleRelease")
     upload_to_play_store(
-      track: "production"
+      track: "production",
+      aab: "app/build/outputs/bundle/release/app-release.aab"
     )
     upload_to_play_store(
       track: "wear:production",
