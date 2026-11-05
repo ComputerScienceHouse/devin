@@ -5,8 +5,7 @@ androidxJunit = "1.3.0"
 appcompat = "1.8.0"
 bcpkixJdk15to18 = "1.86"
 bcprovJdk15to18 = "1.86"
-bom = "3.2.0"
-composeBomVersion = "2026.09.00"
+composeBom = "2026.09.00"
 composeMaterial = "1.7.1"
 converterGson = "3.0.0"
 coreKtx = "1.19.1"
@@ -14,15 +13,10 @@ coreSplashscreen = "1.2.0"
 hiltAndroid = "2.60.1"
 hiltAndroidCompiler = "2.60.1"
 hiltNavigationCompose = "1.4.0"
-horologistComposeLayout = "0.7.15"
+horologistComposeLayout = "0.5.17"
 junit = "4.13.2"
 espressoCore = "3.7.0"
-kotlinxDatetime = "0.8.0"
-kotlinxSerializationJson = "1.11.0"
-lifecycleRuntimeKtx = "2.11.0"
-activityCompose = "1.13.0"
 kotlin = "2.4.21"
-composeBom = "2026.09.00"
 lifecycleRuntimeKtxVersion = "2.11.0"
 loggingInterceptor = "5.5.1"
 material = "1.14.0"
@@ -30,22 +24,16 @@ material3 = "1.4.0"
 okhttp = "5.5.1"
 playServicesWearable = "20.0.1"
 retrofit = "3.0.0"
-oktaAuthFoundation = "3.2.0"
-oktaAuthFoundationBootstrap = "1.2.1"
+oktaBom = "1.2.0"
+oktaAuthFoundation = "1.2.0"
+oktaAuthFoundationBootstrap = "1.2.0"
 securityCryptoKtx = "1.1.0"
-volley = "1.2.1"
-navigationCompose = "2.10.2"
-material3Version = "1.5.0-beta01"
-datastorePreferences = "1.2.1"
-datastoreCore = "1.2.1"
-coilCompose = "3.6.3"
-coilNetworkOkhttp = "3.6.3"
 wearPhoneInteractions = "1.1.1"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
-androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 androidx-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "composeMaterial" }
 androidx-compose-material = { module = "androidx.wear.compose:compose-material", version.ref = "composeMaterial" }
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -72,7 +60,7 @@ androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview
 androidx-wear-phone-interactions = { module = "androidx.wear:wear-phone-interactions", version.ref = "wearPhoneInteractions" }
 bcpkix-jdk15to18 = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bcpkixJdk15to18" }
 bcprov-jdk15to18 = { module = "org.bouncycastle:bcprov-jdk15to18", version.ref = "bcprovJdk15to18" }
-bom = { module = "com.okta.kotlin:bom", version.ref = "bom" }
+bom = { module = "com.okta.kotlin:bom", version.ref = "oktaBom" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
 hilt-android-compiler = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompiler" }
