@@ -9,11 +9,11 @@ plugins {
 
 android {
   namespace = "edu.rit.csh.devin"
-  compileSdk = 34
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "edu.rit.csh.devin"
-    minSdk = 24
+    minSdk = 26
     targetSdk = 34
     val properties = Properties().apply {
       load(File("version.properties").reader())

@@ -6,10 +6,10 @@ plugins {
 
 android {
   namespace = "edu.rit.csh.devin.shared"
-  compileSdk = 34
+  compileSdk = 37
 
   defaultConfig {
-    minSdk = 24
+    minSdk = 26
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     consumerProguardFiles("consumer-rules.pro")

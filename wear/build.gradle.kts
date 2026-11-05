@@ -9,7 +9,7 @@ plugins {
 
 android {
   namespace = "edu.rit.csh.devin"
-  compileSdk = 34
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "edu.rit.csh.devin"
