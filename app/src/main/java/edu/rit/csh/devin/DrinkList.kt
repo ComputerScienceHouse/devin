@@ -52,12 +52,13 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.okta.authfoundation.credential.Token
 import dagger.hilt.android.lifecycle.HiltViewModel
+import edu.rit.csh.devin.shared.GatekeeperViewModel
 import edu.rit.csh.devin.shared.model.Api
 import edu.rit.csh.devin.shared.model.DrinkMachineReturn
 import edu.rit.csh.devin.shared.model.DrinkSlot
 import edu.rit.csh.devin.shared.model.DropPayload
 import edu.rit.csh.devin.shared.model.UserPayload
-import edu.rit.csh.devin.shared.GatekeeperViewModel
+import kotlin.io.encoding.Base64
 import edu.rit.csh.devin.shared.model.ThinDrinkMachine
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -302,7 +303,8 @@ class DrinkViewModel @Inject constructor(
 //        }
       }, launch {
         val payloadStr =
-          kotlin.io.encoding.Base64.UrlSafe.decode(token.value!!.accessToken.split(".")[1])
+          Base64.UrlSafe.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL)
+            .decode(token.value!!.accessToken.split(".")[1])
             .decodeToString()
         val payload = Gson().fromJson(payloadStr, UserPayload::class.java)
         val credits = api.getCredits(payload.preferredUsername)
