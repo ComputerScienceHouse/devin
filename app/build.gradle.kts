@@ -14,7 +14,7 @@ android {
   defaultConfig {
     applicationId = "edu.rit.csh.devin"
     minSdk = 26
-    targetSdk = 34
+    targetSdk = 37
     val properties = Properties().apply {
       load(File("version.properties").reader())
     }
@@ -45,7 +45,12 @@ android {
     release {
       isMinifyEnabled = true
       isShrinkResources = true
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro"
+      )
+
       isDebuggable = false
       signingConfig = signingConfigs.getByName("release")
     }
