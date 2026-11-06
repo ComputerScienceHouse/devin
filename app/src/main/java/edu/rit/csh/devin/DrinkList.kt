@@ -31,8 +31,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -54,12 +52,13 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.okta.authfoundation.credential.Token
 import dagger.hilt.android.lifecycle.HiltViewModel
+import edu.rit.csh.devin.shared.GatekeeperViewModel
 import edu.rit.csh.devin.shared.model.Api
 import edu.rit.csh.devin.shared.model.DrinkMachineReturn
 import edu.rit.csh.devin.shared.model.DrinkSlot
 import edu.rit.csh.devin.shared.model.DropPayload
 import edu.rit.csh.devin.shared.model.UserPayload
-import edu.rit.csh.devin.shared.GatekeeperViewModel
+import kotlin.io.encoding.Base64
 import edu.rit.csh.devin.shared.model.ThinDrinkMachine
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,6 +83,23 @@ fun DrinkList(
   val selectedMachine by drinkViewModel.selectedMachine.collectAsState()
   val drinkItems by drinkViewModel.items.collectAsState()
   var refreshError: Exception? by remember { mutableStateOf(null) }
+  var isRefreshing by remember { mutableStateOf(false) }
+  val coroutineScope = rememberCoroutineScope()
+
+  val onRefresh: () -> Unit = {
+    isRefreshing = true
+    coroutineScope.launch {
+      refreshError = null
+      try {
+        drinkViewModel.refresh()
+      } catch (err: Exception) {
+        refreshError = err
+      } finally {
+        isRefreshing = false
+      }
+    }
+  }
+
   WithAuth {
     // Get drinks
     LaunchedEffect("DrinkList -> DrinkViewModel::refresh") {
@@ -101,18 +117,6 @@ fun DrinkList(
     val items = drinkItems?.filter {
       selectedMachine == null || selectedMachine!!.name == it.name
     }
-    val pullRefreshState = rememberPullToRefreshState()
-    if (pullRefreshState.isRefreshing) {
-      LaunchedEffect(Unit) {
-        refreshError = null
-        try {
-          drinkViewModel.refresh()
-        } catch (err: Exception) {
-          refreshError = err
-        }
-        pullRefreshState.endRefresh()
-      }
-    }
     if (refreshError != null) {
       Column(
         modifier = modifier.fillMaxSize(),
@@ -129,14 +133,16 @@ fun DrinkList(
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(bottom = 8.dp)
         )
-        Button(onClick = {
-          pullRefreshState.startRefresh()
-        }) {
+        Button(onClick = onRefresh) {
           Text("Retry")
         }
       }
     } else if (items != null) {
-      Box(modifier = modifier.nestedScroll(connection = pullRefreshState.nestedScrollConnection)) {
+      PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+        modifier = modifier
+      ) {
         Spacer(modifier = Modifier.height(8.dp))
         LazyColumn(
           modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -177,9 +183,6 @@ fun DrinkList(
             Spacer(modifier = Modifier)
           }
         }
-        PullToRefreshContainer(
-          state = pullRefreshState, modifier = Modifier.align(alignment = Alignment.TopCenter)
-        )
       }
     } else {
       Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -300,7 +303,8 @@ class DrinkViewModel @Inject constructor(
 //        }
       }, launch {
         val payloadStr =
-          kotlin.io.encoding.Base64.UrlSafe.decode(token.value!!.accessToken.split(".")[1])
+          Base64.UrlSafe.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL)
+            .decode(token.value!!.accessToken.split(".")[1])
             .decodeToString()
         val payload = Gson().fromJson(payloadStr, UserPayload::class.java)
         val credits = api.getCredits(payload.preferredUsername)

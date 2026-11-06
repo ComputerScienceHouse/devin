@@ -2,19 +2,19 @@ import org.jetbrains.kotlin.konan.properties.Properties
 
 plugins {
   id("com.android.application")
-  id("org.jetbrains.kotlin.android")
-  kotlin("kapt")
+  id("com.android.legacy-kapt")
   id("com.google.dagger.hilt.android")
+  id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
   namespace = "edu.rit.csh.devin"
-  compileSdk = 34
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "edu.rit.csh.devin"
-    minSdk = 24
-    targetSdk = 34
+    minSdk = 26
+    targetSdk = 37
     val properties = Properties().apply {
       load(File("version.properties").reader())
     }
@@ -45,7 +45,12 @@ android {
     release {
       isMinifyEnabled = true
       isShrinkResources = true
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro"
+      )
+
       isDebuggable = false
       signingConfig = signingConfigs.getByName("release")
     }
@@ -60,14 +65,8 @@ android {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
   }
-  kotlinOptions {
-    jvmTarget = "17"
-  }
   buildFeatures {
     compose = true
-  }
-  composeOptions {
-    kotlinCompilerExtensionVersion = "1.4.3"
   }
   packaging {
     resources {
@@ -79,40 +78,40 @@ android {
 
 dependencies {
   implementation(project(":shared"))
-  implementation("androidx.core:core-ktx:1.9.0")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-  implementation("androidx.activity:activity-compose:1.7.0")
-  implementation(platform("androidx.compose:compose-bom:2023.03.00"))
-  implementation("androidx.compose.ui:ui")
-  implementation("androidx.compose.ui:ui-graphics")
-  implementation("androidx.compose.ui:ui-tooling-preview")
-  implementation("androidx.compose.material3:material3:1.2.0-alpha12")
-  testImplementation("junit:junit:4.13.2")
-  androidTestImplementation("androidx.test.ext:junit:1.1.5")
-  androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-  androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
-  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-  debugImplementation("androidx.compose.ui:ui-tooling")
-  debugImplementation("androidx.compose.ui:ui-test-manifest")
+  implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.lifecycle.runtime.ktx)
+  implementation(libs.androidx.activity.compose)
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.androidx.compose.ui)
+  implementation(libs.androidx.compose.ui.graphics)
+  implementation(libs.androidx.compose.ui.tooling.preview)
+  implementation(libs.androidx.compose.material3)
+  testImplementation(libs.junit)
+  androidTestImplementation(libs.androidx.junit)
+  androidTestImplementation(libs.androidx.espresso.core)
+  androidTestImplementation(platform(libs.androidx.compose.bom))
+  androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+  debugImplementation(libs.androidx.compose.ui.tooling)
+  debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-  implementation("com.squareup.okhttp3:okhttp:4.11.0")
-  implementation("com.squareup.retrofit2:retrofit:2.9.0")
-  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+  implementation(libs.okhttp)
+  implementation(libs.retrofit)
+  implementation(libs.converter.gson)
+  implementation(libs.logging.interceptor)
 
   // Ensure all dependencies are compatible using the Bill of Materials (BOM).
-  implementation(platform("com.okta.kotlin:bom:1.2.0"))
+  implementation(platform(libs.bom))
 
   // Add the dependencies to your project.
-  implementation("com.okta.kotlin:auth-foundation")
-  implementation("com.okta.kotlin:auth-foundation-bootstrap")
-  implementation("com.okta.kotlin:oauth2")
-  implementation("com.okta.kotlin:web-authentication-ui")
+  implementation(libs.okta.auth.foundation)
+  implementation(libs.okta.auth.foundation.bootstrap)
+  implementation(libs.oauth2)
+  implementation(libs.web.authentication.ui)
 
-  implementation("com.google.dagger:hilt-android:2.48")
-  kapt("com.google.dagger:hilt-android-compiler:2.44")
-  implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
-  implementation("androidx.compose.material:material-icons-extended")
+  implementation(libs.hilt.android)
+  kapt(libs.hilt.android.compiler)
+  implementation(libs.androidx.hilt.navigation.compose)
+  implementation(libs.androidx.compose.material.icons.extended)
 }
 
 kapt {

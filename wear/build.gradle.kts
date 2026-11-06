@@ -2,14 +2,14 @@ import org.jetbrains.kotlin.konan.properties.Properties
 
 plugins {
   id("com.android.application")
-  id("org.jetbrains.kotlin.android")
-  kotlin("kapt")
+  id("com.android.legacy-kapt")
   id("com.google.dagger.hilt.android")
+  id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
   namespace = "edu.rit.csh.devin"
-  compileSdk = 34
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "edu.rit.csh.devin"
@@ -43,7 +43,12 @@ android {
     release {
       isMinifyEnabled = true
       isShrinkResources = true
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro"
+      )
+
       isDebuggable = false
       signingConfig = signingConfigs.getByName("release")
     }
@@ -58,16 +63,10 @@ android {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
   }
-  kotlinOptions {
-    jvmTarget = "17"
-  }
   buildFeatures {
     compose = true
   }
-  composeOptions {
-    kotlinCompilerExtensionVersion = "1.4.3"
-  }
-  packaging {
+    packaging {
     resources {
       excludes += "/META-INF/{AL2.0,LGPL2.1}"
       excludes += "/org/bouncycastle/**"
@@ -77,37 +76,37 @@ android {
 
 dependencies {
   implementation(project(":shared"))
-  implementation("com.google.android.gms:play-services-wearable:18.0.0")
-  implementation(platform("androidx.compose:compose-bom:2023.08.00"))
-  implementation("androidx.compose.ui:ui")
-  implementation("androidx.compose.ui:ui-tooling-preview")
-  implementation("androidx.wear.compose:compose-material:1.1.2")
-  implementation("androidx.wear.compose:compose-foundation:1.1.2")
-  implementation("androidx.activity:activity-compose:1.7.2")
-  implementation("androidx.core:core-splashscreen:1.0.1")
-  implementation("androidx.wear:wear-phone-interactions:1.0.1")
-  androidTestImplementation(platform("androidx.compose:compose-bom:2023.08.00"))
-  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-  debugImplementation("androidx.compose.ui:ui-tooling")
-  debugImplementation("androidx.compose.ui:ui-test-manifest")
+  implementation(libs.play.services.wearable)
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.androidx.ui)
+  implementation(libs.androidx.ui.tooling.preview)
+  implementation(libs.androidx.compose.material)
+  implementation(libs.androidx.compose.foundation)
+  implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.core.splashscreen)
+  implementation(libs.androidx.wear.phone.interactions)
+  androidTestImplementation(platform(libs.androidx.compose.bom))
+  androidTestImplementation(libs.androidx.ui.test.junit4)
+  debugImplementation(libs.androidx.ui.tooling)
+  debugImplementation(libs.androidx.ui.test.manifest)
 
-  implementation(platform("com.okta.kotlin:bom:1.2.0"))
+  implementation(platform(libs.bom))
 
-  implementation("com.okta.kotlin:auth-foundation")
-  implementation("com.okta.kotlin:auth-foundation-bootstrap")
-  implementation("com.okta.kotlin:oauth2")
+  implementation(libs.okta.auth.foundation)
+  implementation(libs.okta.auth.foundation.bootstrap)
+  implementation(libs.kotlin.oauth2)
 
-  implementation("com.google.dagger:hilt-android:2.48")
-  kapt("com.google.dagger:hilt-android-compiler:2.44")
-  implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
-  implementation("androidx.compose.material:material-icons-extended")
-  implementation("com.squareup.okhttp3:okhttp:4.11.0")
-  implementation("com.squareup.retrofit2:retrofit:2.9.0")
-  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+  implementation(libs.hilt.android)
+  kapt(libs.hilt.android.compiler)
+  implementation(libs.androidx.hilt.navigation.compose)
+  implementation(libs.androidx.material.icons.extended)
+  implementation(libs.okhttp)
+  implementation(libs.retrofit)
+  implementation(libs.converter.gson)
+  implementation(libs.logging.interceptor)
 
-  implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
-  implementation("com.google.android.horologist:horologist-compose-layout:0.5.17")
+  implementation(libs.androidx.security.crypto.ktx)
+  implementation(libs.horologist.compose.layout)
 }
 
 kapt {

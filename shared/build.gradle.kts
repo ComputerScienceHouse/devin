@@ -1,16 +1,15 @@
 plugins {
   id("com.android.library")
-  id("org.jetbrains.kotlin.android")
-  kotlin("kapt")
+  id("com.android.legacy-kapt")
   id("com.google.dagger.hilt.android")
 }
 
 android {
   namespace = "edu.rit.csh.devin.shared"
-  compileSdk = 34
+  compileSdk = 37
 
   defaultConfig {
-    minSdk = 24
+    minSdk = 26
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     consumerProguardFiles("consumer-rules.pro")
@@ -18,16 +17,17 @@ android {
 
   buildTypes {
     release {
-      isMinifyEnabled = true
-      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      isMinifyEnabled = false
+
+      proguardFiles(
+        getDefaultProguardFile("proguard-android-optimize.txt"),
+        "proguard-rules.pro"
+      )
     }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-  }
-  kotlinOptions {
-    jvmTarget = "17"
   }
 
   packaging {
@@ -38,36 +38,35 @@ android {
 }
 
 dependencies {
-
-  implementation("androidx.core:core-ktx:1.12.0")
-  implementation("androidx.appcompat:appcompat:1.6.1")
-  implementation("com.google.android.material:material:1.9.0")
-  implementation(platform("androidx.compose:compose-bom:2023.08.00"))
-  implementation("androidx.compose.material:material-icons-extended")
-  testImplementation("junit:junit:4.13.2")
-  androidTestImplementation("androidx.test.ext:junit:1.1.5")
-  androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+  implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.appcompat)
+  implementation(libs.material)
+  implementation(platform(libs.androidx.compose.bom))
+  implementation(libs.material.icons.extended)
+  testImplementation(libs.junit)
+  androidTestImplementation(libs.androidx.junit)
+  androidTestImplementation(libs.androidx.espresso.core)
 
   // Ensure all dependencies are compatible using the Bill of Materials (BOM).
-  implementation(platform("com.okta.kotlin:bom:1.2.0"))
+  implementation(platform(libs.bom))
 
   // Add the dependencies to your project.
-  implementation("com.okta.kotlin:auth-foundation")
-  implementation("com.okta.kotlin:auth-foundation-bootstrap")
-  implementation("com.okta.kotlin:oauth2")
+  implementation(libs.okta.auth.foundation)
+  implementation(libs.okta.auth.foundation.bootstrap)
+  implementation(libs.okta.oauth2)
 
-  implementation("com.google.dagger:hilt-android:2.48")
-  kapt("com.google.dagger:hilt-android-compiler:2.44")
-  implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+  implementation(libs.hilt.android)
+  kapt(libs.hilt.android.compiler)
+  implementation(libs.androidx.hilt.navigation.compose)
 
-  implementation("com.squareup.okhttp3:okhttp:4.11.0")
-  implementation("com.squareup.retrofit2:retrofit:2.9.0")
-  implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-  implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+  implementation(libs.okhttp)
+  implementation(libs.retrofit)
+  implementation(libs.converter.gson)
+  implementation(libs.logging.interceptor)
 
-  implementation("org.bouncycastle:bcpkix-jdk15to18:1.77")
-  implementation("org.bouncycastle:bcprov-jdk15to18:1.77")
-  implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
+  implementation(libs.bcpkix.jdk15to18)
+  implementation(libs.bcprov.jdk15to18)
+  implementation(libs.androidx.security.crypto.ktx)
 }
 
 kapt {

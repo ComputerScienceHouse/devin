@@ -304,7 +304,8 @@ class DrinkViewModel @Inject constructor(
 //        }
       }, launch {
         val payloadStr =
-          Base64.UrlSafe.decode(token.value!!.accessToken.split(".")[1]).decodeToString()
+          Base64.UrlSafe.withPadding(Base64.PaddingOption.PRESENT_OPTIONAL)
+            .decode(token.value!!.accessToken.split(".")[1]).decodeToString()
         val payload = Gson().fromJson(payloadStr, UserPayload::class.java)
         val credits = api.getCredits(payload.preferredUsername)
         _drinkCredits.value = credits.user.drinkBalance
