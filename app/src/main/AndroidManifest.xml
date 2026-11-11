@@ -13,11 +13,12 @@
       android:supportsRtl="true"
       android:theme="@style/Theme.Flask"
       android:name="edu.rit.csh.devin.FlaskApplication"
-      tools:targetApi="34">
+      tools:targetApi="34"
+      tools:replace="android:fullBackupContent">
+<!-- This last key^ fixes an issue with the app's manifest not merging with Okta's manifest. -->
     <activity
         android:name=".MainActivity"
         android:exported="true"
-        android:label="@string/app_name"
         android:theme="@style/Theme.Flask">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
