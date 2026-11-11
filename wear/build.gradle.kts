@@ -14,7 +14,7 @@ android {
   defaultConfig {
     applicationId = "edu.rit.csh.devin"
     minSdk = 26
-    targetSdk = 33
+    targetSdk = 37
     val properties = Properties().apply {
       load(File("version.properties").reader())
     }
