@@ -18,6 +18,7 @@ junit = "4.13.2"
 espressoCore = "3.7.0"
 kotlin = "2.4.21"
 lifecycleRuntimeKtxVersion = "2.11.0"
+ksp = "2.1.20-1.0.31"
 loggingInterceptor = "5.5.1"
 material = "1.14.0"
 material3 = "1.4.0"
@@ -82,6 +83,6 @@ web-authentication-ui = { module = "com.okta.kotlin:web-authentication-ui" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-legacy-kapt = { id = "com.android.legacy-kapt", version.ref = "agp" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hiltAndroid" }
 library = { id = "com.android.library", version.ref = "agp" }

@@ -1,6 +1,6 @@
 plugins {
   id("com.android.library")
-  id("com.android.legacy-kapt")
+  alias(libs.plugins.ksp)
   id("com.google.dagger.hilt.android")
 }
 
@@ -56,7 +56,7 @@ dependencies {
   implementation(libs.okta.oauth2)
 
   implementation(libs.hilt.android)
-  kapt(libs.hilt.android.compiler)
+  ksp(libs.hilt.android.compiler)
   implementation(libs.androidx.hilt.navigation.compose)
 
   implementation(libs.okhttp)
@@ -67,8 +67,4 @@ dependencies {
   implementation(libs.bcpkix.jdk15to18)
   implementation(libs.bcprov.jdk15to18)
   implementation(libs.androidx.security.crypto.ktx)
-}
-
-kapt {
-  correctErrorTypes = true
 }

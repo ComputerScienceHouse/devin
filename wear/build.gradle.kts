@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.konan.properties.Properties
 
 plugins {
   id("com.android.application")
-  id("com.android.legacy-kapt")
+  alias(libs.plugins.ksp)
   id("com.google.dagger.hilt.android")
   id("org.jetbrains.kotlin.plugin.compose")
 }
@@ -97,7 +97,7 @@ dependencies {
   implementation(libs.kotlin.oauth2)
 
   implementation(libs.hilt.android)
-  kapt(libs.hilt.android.compiler)
+  ksp(libs.hilt.android.compiler)
   implementation(libs.androidx.hilt.navigation.compose)
   implementation(libs.androidx.material.icons.extended)
   implementation(libs.okhttp)
@@ -107,8 +107,4 @@ dependencies {
 
   implementation(libs.androidx.security.crypto.ktx)
   implementation(libs.horologist.compose.layout)
-}
-
-kapt {
-  correctErrorTypes = true
 }
